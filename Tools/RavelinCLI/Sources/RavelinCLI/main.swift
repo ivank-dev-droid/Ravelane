@@ -125,21 +125,21 @@ func solveAll(outputPath: String) {
 }
 
 func sweep() {
-    let archetypes: [(String, Deck)] = DeckPresets.all.map { ($0.name, $0.deck) }
     print("archetype    world        cleared  avgPieces  avgTime  avgStars")
-    for (name, deck) in archetypes {
+    var worstPairs: [String] = []
+
+    for archetype in Archetype.allCases {
         for world in WorldID.allCases {
             var cleared = 0
             var pieces = 0
             var time = Fixed.zero
             var stars = 0
             let levels = LevelCatalog.levels(in: world)
+
             for level in levels {
                 var tuned = level
-                tuned.allowedPieces = deck.pieceTypes.filter { level.allowedPieces.contains($0) }
-                if tuned.allowedPieces.count < 4 { tuned.allowedPieces = level.allowedPieces }
-                let options = Solver.Options(beamWidth: 14, maxPieces: 70)
-                guard let route = Solver(level: tuned, options: options).solve() else { continue }
+                tuned.allowedPieces = archetype.palette(from: level.allowedPieces, slots: Deck.slotLimit)
+                guard let route = RouteWalker.solve(level: tuned, attempts: 30) else { continue }
                 tuned.solution = route
                 tuned.parPieces = Swift.max(level.parPieces, route.count + 3)
                 let played = LevelRunner.play(level: tuned)
@@ -148,9 +148,13 @@ func sweep() {
                 time += played.result.elapsed
                 stars += played.result.stars(for: level)
             }
+
             let count = Swift.max(1, levels.count)
+            if cleared * 10 < levels.count * 7 {
+                worstPairs.append("\(archetype.displayName)/\(world.rawValue) \(cleared)/\(levels.count)")
+            }
             let row = [
-                name.padding(toLength: 12, withPad: " ", startingAt: 0),
+                archetype.displayName.padding(toLength: 12, withPad: " ", startingAt: 0),
                 world.rawValue.padding(toLength: 12, withPad: " ", startingAt: 0),
                 "\(cleared)/\(levels.count)".padding(toLength: 9, withPad: " ", startingAt: 0),
                 "\(pieces / count)".padding(toLength: 11, withPad: " ", startingAt: 0),
@@ -160,6 +164,10 @@ func sweep() {
             print(row)
         }
     }
+
+    print(worstPairs.isEmpty
+          ? "every archetype clears at least 70 percent of every world"
+          : "under target: \(worstPairs.joined(separator: ", "))")
 }
 
 func verifyLevels() {

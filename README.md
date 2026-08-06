@@ -67,5 +67,5 @@ pieces, 12 cars, 18 parts, deck and hand, 60 levels across 6 worlds, star scorin
 iOS app that builds and runs the game loop.
 
 Not done yet: junction branch building, the 12 parts whose systems do not exist, audio and
-haptics, and deck-archetype balance — the sweep currently shows most archetype/world
-combinations failing, which is the next real piece of work.
+haptics, and device testing. Deck-archetype balance is measured but not finished: Bank decks
+clear every world, Runway and Air decks lag. See `CLAUDE.md`.

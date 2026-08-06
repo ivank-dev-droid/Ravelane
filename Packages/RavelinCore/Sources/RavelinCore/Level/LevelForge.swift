@@ -11,27 +11,33 @@ public enum LevelForge {
         case .foundry:
             ids = ["straight", "long_run", "stub", "gentle_curve_l", "gentle_curve_r",
                    "sharp_curve_l", "sharp_curve_r", "rise_shallow", "drop_shallow",
-                   "wide_plate", "bank_l", "bank_r"]
+                   "wide_plate", "bank_l", "bank_r",
+                   "crest", "dip", "chicane_lr", "booster_strip", "brake_strip", "adjustable_curve"]
         case .updraft:
             ids = ["straight", "long_run", "stub", "gentle_curve_l", "gentle_curve_r",
                    "rise_shallow", "sharp_curve_l", "sharp_curve_r", "drop_shallow",
-                   "banked_curve_l", "banked_curve_r", "brake_strip"]
+                   "banked_curve_l", "banked_curve_r", "brake_strip",
+                   "kicker", "landing_pad", "crest", "wide_plate", "bank_l", "bank_r"]
         case .magnetite:
             ids = ["straight", "stub", "gentle_curve_l", "gentle_curve_r",
                    "sharp_curve_l", "sharp_curve_r", "rise_steep", "drop_steep",
-                   "spiral_up", "spiral_down", "bank_l", "bank_r"]
+                   "spiral_up", "spiral_down", "bank_l", "bank_r",
+                   "wide_plate", "banked_curve_l", "banked_curve_r", "chicane_lr", "long_run", "brake_strip"]
         case .haze:
             ids = ["straight", "long_run", "stub", "gentle_curve_l", "gentle_curve_r",
                    "sharp_curve_l", "sharp_curve_r", "chicane_lr", "rise_shallow",
-                   "drop_shallow", "wide_plate", "adjustable_curve"]
+                   "drop_shallow", "wide_plate", "adjustable_curve",
+                   "bank_l", "bank_r", "banked_curve_l", "banked_curve_r", "crest", "brake_strip"]
         case .rundown:
             ids = ["straight", "long_run", "stub", "gentle_curve_l", "gentle_curve_r",
                    "sharp_curve_l", "sharp_curve_r", "drop_shallow", "drop_steep",
-                   "booster_strip", "wide_plate", "narrow_bridge"]
+                   "booster_strip", "wide_plate", "narrow_bridge",
+                   "bank_l", "bank_r", "banked_curve_l", "banked_curve_r", "chicane_lr", "stub"]
         case .overdrive:
             ids = ["straight", "long_run", "stub", "bank_l", "bank_r",
                    "banked_curve_l", "banked_curve_r", "gentle_curve_l", "gentle_curve_r",
-                   "brake_strip", "rise_shallow", "wide_plate"]
+                   "brake_strip", "rise_shallow", "wide_plate",
+                   "long_run", "sharp_curve_l", "sharp_curve_r", "chicane_lr", "crest", "booster_strip"]
         }
         return ids.map { PieceID($0) }
     }
@@ -51,7 +57,7 @@ public enum LevelForge {
         let plinth = [PieceID("long_run"), PieceID("stub")]
         let checkpointCount = index < 2 ? 0 : (index < 6 ? 1 : 2)
         let routeLength = 12 + index * 2 + checkpointCount * 5
-        let walker = RouteWalker(palette: ids, rules: rules)
+        let walker = RouteWalker(palette: Archetype.core(from: ids), rules: rules)
 
         var walk: RouteWalker.Walk?
         var attempt: UInt64 = 0
@@ -101,7 +107,7 @@ public enum LevelForge {
         for step in 1...(checkpointCount + 1) {
             let fraction = Fixed(step, over: checkpointCount + 1)
             guard let sample = point(at: fraction) else { continue }
-            checkpoints.append(Gate(position: sample.position, normal: sample.tangent, radius: Fixed(14)))
+            checkpoints.append(Gate(position: sample.position, normal: sample.tangent, radius: Fixed(24)))
         }
         let goal = checkpoints.removeLast()
 
@@ -158,11 +164,23 @@ public enum LevelForge {
 }
 
 public enum LevelCatalog {
-    public static let all: [Level] = LevelForge.generateAll().map { level in
-        var copy = level
-        copy.solution = LevelSolutions.table[level.id.rawValue]?.map { PieceID($0) } ?? []
-        return copy
-    }
+    public static let all: [Level] = {
+        var result: [Level] = []
+        for world in WorldID.allCases {
+            var floor = 0
+            for index in 0..<LevelForge.levelsPerWorld {
+                var level = LevelForge.generate(world: world, index: index)
+                level.solution = LevelSolutions.table[level.id.rawValue]?.map { PieceID($0) } ?? []
+                if !level.solution.isEmpty {
+                    level.parPieces = Swift.max(level.parPieces, level.solution.count + 3)
+                }
+                floor = Swift.max(floor, level.parPieces)
+                level.parPieces = floor
+                result.append(level)
+            }
+        }
+        return result
+    }()
 
     public static func level(_ id: LevelID) -> Level? { all.first { $0.id == id } }
 
