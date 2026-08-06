@@ -174,8 +174,13 @@ final class SessionTests: XCTestCase {
         let start = s.material
         _ = s.run(maxSteps: 6000, policy: greedyPolicy)
         let earned = s.log.contains { if case .materialEarned(_, .distance) = $0 { return true }; return false }
-        XCTAssertTrue(earned)
-        XCTAssertGreaterThan(s.material + s.placedCount * 4, start)
+        XCTAssertTrue(earned, "distance must pay something back")
+        let spent = s.log.reduce(0) { total, event in
+            if case .placed(_, let cost) = event { return total + cost }
+            return total
+        }
+        XCTAssertGreaterThan(spent, 0)
+        XCTAssertGreaterThan(s.material + spent, start, "earnings must exceed the starting purse plus nothing")
     }
 
     func testSelfIntersectionIsRejected() {

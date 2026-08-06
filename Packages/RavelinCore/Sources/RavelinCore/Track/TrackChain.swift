@@ -31,10 +31,10 @@ public struct TrackChain: Sendable {
     }
 
     @discardableResult
-    public mutating func append(_ id: PieceID) -> PlacedPiece? {
+    public mutating func append(_ id: PieceID, precomputed: [RibbonSample]? = nil) -> PlacedPiece? {
         guard let geometry = catalog.geometry(id) else { return nil }
         let entry = headFrame
-        let samples = geometry.samples(from: entry)
+        let samples = precomputed ?? geometry.samples(from: entry)
         let record = PlacedPiece(
             index: placed.count,
             pieceID: id,

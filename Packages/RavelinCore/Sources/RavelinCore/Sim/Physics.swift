@@ -13,6 +13,9 @@ public enum Physics {
     public static let maximumAirTime = Fixed(12)
     public static let fallLimit = Fixed(400)
     public static let badLandingCost = Fixed(35)
+    public static let groundedGrace = Fixed(1, over: 2)
+    public static let stallTimeout = Fixed(4)
+    public static let stallSpeed = Fixed(1, over: 2)
 
     public struct StepResult: Sendable {
         public var car: CarState
@@ -83,10 +86,13 @@ public enum Physics {
         var normalLoad = world.gravity * cosGrade + speedSquared * sample.verticalCurvature
         normalLoad += spec.downforce * speedSquared / Fixed(400)
 
-        if normalLoad <= .zero {
+        if car.groundedGrace > .zero {
+            car.groundedGrace = Swift.max(.zero, car.groundedGrace - dt)
+        } else if normalLoad <= .zero {
             launch(&car, &events, sample: sample, chain: chain)
             return
         }
+        if normalLoad <= .zero { normalLoad = world.gravity * Fixed(1, over: 5) }
 
         let demand = speedSquared * sample.lateralCurvature
         let bankAssist = bankContribution(
@@ -123,6 +129,18 @@ public enum Physics {
             let cost = scrapeCostPerSecond * dt
             car.integrity -= cost
             events.append(.scraped(cost: cost))
+        }
+
+        if car.speed < stallSpeed {
+            car.stallTime += dt
+            if car.stallTime > stallTimeout {
+                car.mode = .crashed
+                car.crashReason = .stalled
+                events.append(.crashed(.stalled))
+                return
+            }
+        } else {
+            car.stallTime = .zero
         }
 
         let advance = car.speed * dt
@@ -227,6 +245,7 @@ public enum Physics {
         car.speed = Swift.max(.zero, speed * Swift.max(.zero, alignment))
         car.lateralVelocity = .zero
         car.airTime = .zero
+        car.groundedGrace = groundedGrace
 
         if alignment < Fixed(88, over: 100) {
             let penalty = badLandingCost * (Fixed(88, over: 100) - alignment) * Fixed(8)

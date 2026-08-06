@@ -105,7 +105,7 @@ public struct WorldRules: Sendable, Hashable, Codable {
 
     public static let foundry = WorldRules(name: "Foundry", gravity: Fixed(981, over: 100))
     public static let updraft = WorldRules(name: "Updraft", gravity: Fixed(36, over: 10),
-                                           gripScale: Fixed(8, over: 10))
+                                           gripScale: Fixed(27, over: 10))
     public static let overdrive = WorldRules(name: "Overdrive", gravity: Fixed(981, over: 100),
-                                             gripScale: Fixed(9, over: 10), startSpeed: Fixed(45))
+                                             gripScale: Fixed(11, over: 10), startSpeed: Fixed(30))
 }

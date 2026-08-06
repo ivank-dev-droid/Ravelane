@@ -70,7 +70,7 @@ x86-64 Linux and are asserted, not recomputed:
 | `testTransformChainMatchesGoldenFingerprint` | `17638089423717976749` |
 | `testCatalogGeometryMatchesGoldenFingerprint` | `13396143040586426581` |
 | `testFixedArithmeticGoldenVector` | `9673759134698064605` |
-| `testReplayMatchesGoldenFingerprint` | `15496974348914203708` |
+| `testReplayMatchesGoldenFingerprint` | `14728847889759036489` |
 
 If they pass on ARM64, replays, ghosts and stored level solutions are portable between
 the two machines, which is the entire reason the simulation uses `Fixed` and CORDIC rather
@@ -113,7 +113,7 @@ meaning. This is a hard project rule.
 
 ## Current state
 
-Milestones 0, 1, 2 and 3 complete, 129 tests green on Linux.
+Milestones 0 through 4 complete, 145 tests green on Linux.
 
 - Math: `Fixed` (Q32.32), `Trig` (CORDIC), `Vec3`, `Quat`, `Transform3`, `SplitMix64`
 - Track: 46 pieces, `TrackChain`, world-space ribbon sampling, spatial-hash clearance
@@ -124,11 +124,36 @@ Milestones 0, 1, 2 and 3 complete, 129 tests green on Linux.
 - Debug: `OrthoSVG` plan/elevation/section projections
 - `Tools/RavelinCLI`: `catalog`, `verify`, `render [--piece <id>]`
 
-Deferred to Milestone 4, deliberately: junction branch building (a branch needs somewhere
-to go, so it needs levels), and the 12 parts whose systems do not exist yet — cores,
-checkpoints, fog and decay.
+- Level: 60 levels across 6 worlds, gates, cores, forbidden volumes, hazards, star scoring
+- Solver: `RouteWalker` lays a guaranteed-drivable route; `Solver` beam-searches a shorter
+  one; whichever actually drives becomes the stored solution
 
-Next: Milestone 4 — levels, objectives, hazards, and solver-verified solutions.
+Deferred: junction branch building, and the 12 parts whose systems do not exist yet.
+
+Next: Milestone 5 — balance sweeps; then the iOS layer.
+
+## Levels are generated route-first
+
+Generating gates and then searching for a path produced mostly unsolvable levels. The
+pipeline is inverted: `RouteWalker` random-walks a route that is drivable by construction
+(speed, grip and clearance checked per piece), then the gates and cores are placed **on
+that route**. `Solver` afterwards looks for a shorter line to set par. A level whose
+solution does not survive the real physics is not written out.
+
+Regenerate with `RavelinCLI solve`, which rewrites `Level/LevelSolutions.swift`.
+
+## The estimator must not lie to itself
+
+`SpeedEstimator` approves candidate pieces for the walker and the solver. Two mistakes
+cost a lot of time here:
+
+- `worstExcess` started at zero, so it could never report a *negative* excess, and every
+  safety margin below zero rejected the entire catalog.
+- The estimator clamped speed to a floor instead of reporting a stall, so it happily
+  approved climbs the car cannot make. Pitch accumulates across pieces, so two steep rises
+  in a row is a 60° wall where gravity beats the engine and the car stops dead. The
+  estimator now reports `stalled` and `steepestGrade`, and `Physics` crashes a car that
+  sits under half a metre per second for four seconds rather than freezing forever.
 
 ## Self-intersection is an arc-length question
 

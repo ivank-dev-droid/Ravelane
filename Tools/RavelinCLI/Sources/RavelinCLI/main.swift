@@ -72,6 +72,69 @@ func renderPiece(_ id: String, outputDirectory: String) {
     }
 }
 
+func solveAll(outputPath: String) {
+    var solutions: [(String, [String])] = []
+    var failures: [String] = []
+
+    for world in WorldID.allCases {
+        for index in 0..<LevelForge.levelsPerWorld {
+            let forged = LevelForge.forge(world: world, index: index)
+            let level = forged.level
+
+            var candidates: [[PieceID]] = []
+            if let route = Solver(level: level).solve() { candidates.append(route) }
+            if !forged.route.isEmpty { candidates.append(forged.route) }
+
+            var accepted: (route: [PieceID], time: Fixed, par: Int)?
+            for route in candidates {
+                var candidate = level
+                candidate.solution = route
+                candidate.parPieces = Swift.max(level.parPieces, route.count + 3)
+                let played = LevelRunner.play(level: candidate)
+                if played.result.completed {
+                    accepted = (route, played.result.elapsed, candidate.parPieces)
+                    break
+                }
+            }
+
+            if let accepted {
+                solutions.append((level.id.rawValue, accepted.route.map(\.rawValue)))
+                print("OK   \(level.id)  pieces=\(accepted.route.count) par=\(accepted.par) time=\(accepted.time)")
+            } else {
+                let played = LevelRunner.play(level: level)
+                failures.append("\(level.id) mode=\(played.session.car.mode) reason=\(String(describing: played.result.crashReason)) placed=\(played.session.placedCount)/\(level.solution.count) arc=\(played.session.car.arcLength)/\(played.session.chain.totalLength) speed=\(played.session.car.speed) integrity=\(played.session.car.integrity) t=\(played.session.car.elapsed) cp=\(played.session.objectives.nextCheckpoint)/\(level.checkpoints.count) goalDist=\(played.session.carPosition.distance(to: level.goal.position))")
+                print("FAIL \(level.id)")
+            }
+        }
+    }
+
+    var body = "public enum LevelSolutions {\n    public static let table: [String: [String]] = "
+    body += solutions.isEmpty ? "[:]\n}\n" : "[\n"
+    if solutions.isEmpty { writeDocument(body, to: outputPath) }
+    for (id, route) in solutions.sorted(by: { $0.0 < $1.0 }) {
+        let items = route.map { "\"\($0)\"" }.joined(separator: ", ")
+        body += "        \"\(id)\": [\(items)],\n"
+    }
+    if !solutions.isEmpty {
+        body += "    ]\n}\n"
+        writeDocument(body, to: outputPath)
+    }
+
+    print("solved \(solutions.count) / \(solutions.count + failures.count)")
+    for failure in failures { print("  \(failure)") }
+}
+
+func verifyLevels() {
+    var bad = 0
+    for level in LevelCatalog.all {
+        if let problem = LevelRunner.verify(level: level) {
+            print("FAIL \(level.id): \(problem)")
+            bad += 1
+        }
+    }
+    print(bad == 0 ? "OK \(LevelCatalog.all.count) levels" : "\(bad) level failures")
+}
+
 let command = arguments.first ?? "help"
 let output = value(for: "--out", default: "out")
 
@@ -85,6 +148,10 @@ case "render":
     } else {
         renderPiece(pieceID, outputDirectory: output)
     }
+case "solve":
+    solveAll(outputPath: value(for: "--out", default: "Packages/RavelinCore/Sources/RavelinCore/Level/LevelSolutions.swift"))
+case "levels":
+    verifyLevels()
 case "verify":
     var failures = 0
     for piece in PieceCatalog.all {

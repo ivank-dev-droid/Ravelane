@@ -18,6 +18,7 @@ public enum PlacementRejection: Sendable, Hashable {
     case unknownPiece
     case notEnoughMaterial(needed: Int, have: Int)
     case wouldIntersect(pieceIndex: Int)
+    case blockedByLevel
     case runOver
 }
 
@@ -53,6 +54,7 @@ public struct Session: Sendable {
     public static let cleanLandingBonus = 12
     public static let materialPerMetre = Fixed(1, over: 6)
     public static let runwayWarning = Fixed(3)
+    public static let checkpointBonus = 45
 
     public let catalog: PieceCatalogCache
     public let world: WorldRules
@@ -60,6 +62,7 @@ public struct Session: Sendable {
     public let effects: PartEffects
     public let baseSpec: CarSpec
     public let spec: CarSpec
+    public let level: Level?
 
     public private(set) var chain: TrackChain
     public private(set) var car: CarState
@@ -71,9 +74,11 @@ public struct Session: Sendable {
     public private(set) var discardCount: Int
     public private(set) var log: [PlayEvent]
     public private(set) var simEvents: [SimEvent]
+    public private(set) var objectives: ObjectiveState
 
     private var rng: SplitMix64
     private var distanceCredited: Fixed
+    private var lastPosition: Vec3
 
     public init(
         catalog: PieceCatalogCache = PieceCatalog.cache,
@@ -83,23 +88,33 @@ public struct Session: Sendable {
         world: WorldRules = .foundry,
         seed: UInt64 = 0x5241_5645_4C49_4E01,
         plinth: [PieceID] = [PieceID("long_run"), PieceID("stub")],
-        material: Int = Session.startingMaterial
+        material: Int = Session.startingMaterial,
+        level: Level? = nil
     ) {
         let aggregated = PartCatalog.effects(parts)
         self.catalog = catalog
         self.deck = deck
-        self.world = world
+        self.world = level?.rules ?? world
+        self.level = level
         self.effects = aggregated
         self.baseSpec = spec
         self.spec = aggregated.applied(to: spec)
 
         var built = TrackChain(catalog: catalog)
-        built.appendAll(plinth)
+        built.appendAll(level?.plinth ?? plinth)
         self.chain = built
         self.clearance = ClearanceBuilder.index(for: built)
 
-        self.car = CarState.starting(spec: aggregated.applied(to: spec), world: world)
-        self.material = material
+        let rules = level?.rules ?? world
+        var startingCar = CarState.starting(spec: aggregated.applied(to: spec), world: rules)
+        if let level { startingCar.speed = level.startSpeed }
+        self.car = startingCar
+        self.objectives = ObjectiveState(
+            checkpointCount: level?.checkpoints.count ?? 0,
+            coreCount: level?.cores.count ?? 0
+        )
+        self.lastPosition = built.sample(atArcLength: .zero)?.position ?? .zero
+        self.material = level?.startingMaterial ?? material
         self.discardCooldown = .zero
         self.placedCount = 0
         self.discardCount = 0
@@ -124,6 +139,41 @@ public struct Session: Sendable {
 
     public var clocks: Clocks {
         Clocks.measure(car: car, chain: chain, material: material)
+    }
+
+    public var carPosition: Vec3 {
+        if car.mode == .airborne { return car.airPosition }
+        guard let sample = chain.sample(atArcLength: car.arcLength) else { return lastPosition }
+        return sample.position + sample.lateral * car.lateralOffset
+    }
+
+    public var outcome: LevelResult? {
+        guard let level, !car.isRunning || objectives.reachedGoal else { return nil }
+        return LevelResult(
+            completed: objectives.reachedGoal,
+            piecesUsed: placedCount,
+            elapsed: car.elapsed,
+            coresCollected: objectives.collectedCount,
+            coreTotal: level.cores.count,
+            crashReason: car.crashReason
+        )
+    }
+
+    public func stars() -> Int {
+        guard let level, let result = outcome else { return 0 }
+        return result.stars(for: level)
+    }
+
+    private func forbiddenHit(_ capsules: [Capsule]) -> Bool {
+        guard let level else { return false }
+        for volume in level.forbidden {
+            for capsule in capsules where volume.intersects(capsule) { return true }
+        }
+        for hazard in level.hazards where hazard.isActive(at: car.elapsed) {
+            let volume = hazard.volume(at: car.elapsed)
+            for capsule in capsules where volume.intersects(capsule) { return true }
+        }
+        return false
     }
 
     public func cost(of id: PieceID) -> Int {
@@ -162,7 +212,9 @@ public struct Session: Sendable {
         guard let samples = chain.projectedSamples(afterAppending: id) else { return .unknownPiece }
         let candidateStart = chain.totalLength
         let candidateEnd = candidateStart + piece.length
-        for capsule in ClearanceBuilder.capsules(samples: samples, width: piece.width) {
+        let candidateCapsules = ClearanceBuilder.capsules(samples: samples, width: piece.width)
+        if forbiddenHit(candidateCapsules) { return .blockedByLevel }
+        for capsule in candidateCapsules {
             if let hit = clearance.firstConflict(
                 with: capsule,
                 ignoringArcBetween: candidateStart,
@@ -194,6 +246,37 @@ public struct Session: Sendable {
     }
 
     @discardableResult
+    public mutating func forcePlace(_ id: PieceID) -> PlacementRejection? {
+        guard car.isRunning else { return .runOver }
+        guard let piece = catalog.piece(id) else { return .unknownPiece }
+        let price = cost(of: id)
+        if price > material { return .notEnoughMaterial(needed: price, have: material) }
+        guard let samples = chain.projectedSamples(afterAppending: id) else { return .unknownPiece }
+
+        let candidateStart = chain.totalLength
+        let candidateEnd = candidateStart + piece.length
+        let candidateCapsules = ClearanceBuilder.capsules(samples: samples, width: piece.width)
+        if forbiddenHit(candidateCapsules) { return .blockedByLevel }
+        for capsule in candidateCapsules {
+            if let hit = clearance.firstConflict(
+                with: capsule,
+                ignoringArcBetween: candidateStart,
+                and: candidateEnd,
+                window: ClearanceBuilder.selfContactWindow
+            ) {
+                return .wouldIntersect(pieceIndex: hit)
+            }
+        }
+
+        guard let record = chain.append(id) else { return .unknownPiece }
+        material -= price
+        placedCount += 1
+        ClearanceBuilder.insert(chain: chain, pieceIndex: record.index, into: &clearance)
+        log.append(.placed(id, cost: price))
+        return nil
+    }
+
+    @discardableResult
     public mutating func discard(slot: Int) -> DiscardRejection? {
         guard car.isRunning else { return .runOver }
         guard hand.indices.contains(slot) else { return .slotOutOfRange }
@@ -217,9 +300,13 @@ public struct Session: Sendable {
         guard car.isRunning else { return }
 
         let before = car.distanceTravelled
+        let previousPosition = carPosition
         let result = Physics.step(car: car, chain: chain, spec: spec, world: world, dt: dt)
         car = result.car
         simEvents.append(contentsOf: result.events)
+        let currentPosition = carPosition
+        lastPosition = currentPosition
+        trackObjectives(from: previousPosition, to: currentPosition)
 
         for event in result.events {
             if case .landed(_, let quality) = event, quality > Fixed(95, over: 100) {
@@ -261,6 +348,29 @@ public struct Session: Sendable {
         }
         if hand.allSatisfy({ $0.piece == nil }) {
             log.append(.handEmpty)
+        }
+    }
+
+    private mutating func trackObjectives(from previous: Vec3, to current: Vec3) {
+        guard let level else { return }
+
+        for (index, core) in level.cores.enumerated()
+        where !objectives.coresCollected[index] && core.isCollected(from: previous, to: current) {
+            objectives.coresCollected[index] = true
+            material += core.value
+            log.append(.materialEarned(core.value, reason: .core))
+        }
+
+        if objectives.nextCheckpoint < level.checkpoints.count {
+            let gate = level.checkpoints[objectives.nextCheckpoint]
+            if gate.isCrossed(from: previous, to: current) {
+                objectives.nextCheckpoint += 1
+                material += Session.checkpointBonus
+                log.append(.materialEarned(Session.checkpointBonus, reason: .checkpoint))
+            }
+        } else if !objectives.reachedGoal && level.goal.isCrossed(from: previous, to: current) {
+            objectives.reachedGoal = true
+            car.mode = .finished
         }
     }
 

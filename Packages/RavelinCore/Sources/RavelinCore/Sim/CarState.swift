@@ -11,6 +11,7 @@ public enum CrashReason: String, Sendable, Hashable, Codable {
     case fell
     case brokeUp
     case landedBadly
+    case stalled
 }
 
 public struct CarState: Sendable, Hashable, Codable {
@@ -25,6 +26,8 @@ public struct CarState: Sendable, Hashable, Codable {
     public var airTime: Fixed
     public var elapsed: Fixed
     public var distanceTravelled: Fixed
+    public var groundedGrace: Fixed
+    public var stallTime: Fixed
     public var crashReason: CrashReason?
 
     public init(
@@ -39,6 +42,8 @@ public struct CarState: Sendable, Hashable, Codable {
         airTime: Fixed = .zero,
         elapsed: Fixed = .zero,
         distanceTravelled: Fixed = .zero,
+        groundedGrace: Fixed = .zero,
+        stallTime: Fixed = .zero,
         crashReason: CrashReason? = nil
     ) {
         self.mode = mode
@@ -52,6 +57,8 @@ public struct CarState: Sendable, Hashable, Codable {
         self.airTime = airTime
         self.elapsed = elapsed
         self.distanceTravelled = distanceTravelled
+        self.groundedGrace = groundedGrace
+        self.stallTime = stallTime
         self.crashReason = crashReason
     }
 
