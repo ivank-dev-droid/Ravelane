@@ -113,16 +113,32 @@ meaning. This is a hard project rule.
 
 ## Current state
 
-Milestones 0, 1 and 2 complete, 107 tests green on Linux.
+Milestones 0, 1, 2 and 3 complete, 129 tests green on Linux.
 
 - Math: `Fixed` (Q32.32), `Trig` (CORDIC), `Vec3`, `Quat`, `Transform3`, `SplitMix64`
 - Track: 46 pieces, `TrackChain`, world-space ribbon sampling, spatial-hash clearance
 - Sim: fixed-step physics at 1/120 s, grip and banking, unloading and ballistics,
   landing tolerance, the Runway clock, 12 cars, world rulesets
+- Play: `Session` ties chain, car, deck, hand and Material together. Deck presets,
+  weighted draw, refill delay, discard cooldown, 18 parts, placement validation
 - Debug: `OrthoSVG` plan/elevation/section projections
 - `Tools/RavelinCLI`: `catalog`, `verify`, `render [--piece <id>]`
 
-Next: Milestone 3 — deck, hand, draw model, discard, parts, junction branches, hazards.
+Deferred to Milestone 4, deliberately: junction branch building (a branch needs somewhere
+to go, so it needs levels), and the 12 parts whose systems do not exist yet — cores,
+checkpoints, fog and decay.
+
+Next: Milestone 4 — levels, objectives, hazards, and solver-verified solutions.
+
+## Self-intersection is an arc-length question
+
+Ribbon capsules are wide (radius = half the track width plus a margin), so any two pieces
+laid consecutively overlap geometrically. That is not a collision, it is a join. The real
+question is whether the track returns to a place it has already been **after travelling a
+meaningful distance along itself**, so `ClearanceIndex` ignores anything within
+`selfContactWindow` (20 m) of the candidate's own arc range. The window has to sit between
+two bounds: above the widest combined capsule radius (17 m for two wide plates) and below
+the tightest possible self-return (42 m, a circle of hairpins).
 
 ## Physics calibration
 

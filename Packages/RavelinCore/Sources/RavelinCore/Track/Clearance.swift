@@ -77,6 +77,8 @@ public struct ClearanceIndex: Sendable {
     public struct Entry: Sendable, Hashable {
         public let pieceIndex: Int
         public let capsule: Capsule
+        public let arcStart: Fixed
+        public let arcEnd: Fixed
     }
 
     static let cellSize = Fixed(8)
@@ -107,9 +109,16 @@ public struct ClearanceIndex: Sendable {
         (capsule.minimumCorner, capsule.maximumCorner)
     }
 
-    public mutating func insert(_ capsule: Capsule, pieceIndex: Int) {
+    public mutating func insert(
+        _ capsule: Capsule,
+        pieceIndex: Int,
+        arcStart: Fixed = .zero,
+        arcEnd: Fixed = .zero
+    ) {
         let entryIndex = entries.count
-        entries.append(Entry(pieceIndex: pieceIndex, capsule: capsule))
+        entries.append(Entry(
+            pieceIndex: pieceIndex, capsule: capsule, arcStart: arcStart, arcEnd: arcEnd
+        ))
         let (low, high) = ClearanceIndex.cellRange(capsule)
         let x0 = ClearanceIndex.cellIndex(low.x), x1 = ClearanceIndex.cellIndex(high.x)
         let y0 = ClearanceIndex.cellIndex(low.y), y1 = ClearanceIndex.cellIndex(high.y)
@@ -125,7 +134,9 @@ public struct ClearanceIndex: Sendable {
 
     public func firstConflict(
         with capsule: Capsule,
-        ignoringPieceIndicesAtOrAbove threshold: Int
+        ignoringArcBetween candidateStart: Fixed,
+        and candidateEnd: Fixed,
+        window: Fixed
     ) -> Int? {
         let (low, high) = ClearanceIndex.cellRange(capsule)
         let x0 = ClearanceIndex.cellIndex(low.x), x1 = ClearanceIndex.cellIndex(high.x)
@@ -141,7 +152,8 @@ public struct ClearanceIndex: Sendable {
                         if visited.contains(entryIndex) { continue }
                         visited.insert(entryIndex)
                         let entry = entries[entryIndex]
-                        if entry.pieceIndex >= threshold { continue }
+                        if entry.arcEnd > candidateStart - window
+                            && entry.arcStart < candidateEnd + window { continue }
                         let combined = entry.capsule.radius + capsule.radius
                         let distanceSquared = SegmentDistance.closestSquared(
                             entry.capsule.start, entry.capsule.end,
@@ -160,7 +172,7 @@ public struct ClearanceIndex: Sendable {
 
 public struct ClearanceBuilder {
     public static let samplesPerCapsule = 6
-    public static let verticalTolerance = Fixed(6)
+    public static let selfContactWindow = Fixed(20)
 
     public static func capsules(
         for chain: TrackChain,
@@ -170,9 +182,20 @@ public struct ClearanceBuilder {
         guard pieceIndex >= 0 && pieceIndex < chain.placed.count else { return [] }
         let record = chain.placed[pieceIndex]
         guard let piece = chain.catalog.piece(record.pieceID) else { return [] }
-        let samples = chain.worldSamplesByPiece[pieceIndex]
+        return capsules(
+            samples: chain.worldSamplesByPiece[pieceIndex],
+            width: piece.width,
+            margin: margin
+        )
+    }
+
+    public static func capsules(
+        samples: [RibbonSample],
+        width: Fixed,
+        margin: Fixed = Fixed(1, over: 2)
+    ) -> [Capsule] {
         guard samples.count > 1 else { return [] }
-        let radius = piece.width / Fixed(2) + margin
+        let radius = width / Fixed(2) + margin
 
         var result: [Capsule] = []
         let stride = Swift.max(1, samples.count / samplesPerCapsule)
@@ -198,10 +221,20 @@ public struct ClearanceBuilder {
     public static func index(for chain: TrackChain) -> ClearanceIndex {
         var index = ClearanceIndex()
         for pieceIndex in 0..<chain.placed.count {
-            for capsule in capsules(for: chain, pieceIndex: pieceIndex) {
-                index.insert(capsule, pieceIndex: pieceIndex)
-            }
+            insert(chain: chain, pieceIndex: pieceIndex, into: &index)
         }
         return index
+    }
+
+    public static func insert(chain: TrackChain, pieceIndex: Int, into index: inout ClearanceIndex) {
+        let record = chain.placed[pieceIndex]
+        for capsule in capsules(for: chain, pieceIndex: pieceIndex) {
+            index.insert(
+                capsule,
+                pieceIndex: pieceIndex,
+                arcStart: record.startArcLength,
+                arcEnd: record.endArcLength
+            )
+        }
     }
 }

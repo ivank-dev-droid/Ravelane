@@ -43,10 +43,13 @@ final class ClearanceTests: XCTestCase {
         chain.appendAll(Array(repeating: PieceID("straight"), count: 12))
         let index = ClearanceBuilder.index(for: chain)
         for pieceIndex in 2..<chain.placed.count {
+            let record = chain.placed[pieceIndex]
             for capsule in ClearanceBuilder.capsules(for: chain, pieceIndex: pieceIndex) {
                 let conflict = index.firstConflict(
                     with: capsule,
-                    ignoringPieceIndicesAtOrAbove: pieceIndex - 1
+                    ignoringArcBetween: record.startArcLength,
+                    and: record.endArcLength,
+                    window: ClearanceBuilder.selfContactWindow
                 )
                 XCTAssertNil(conflict, "unexpected conflict on piece \(pieceIndex)")
             }
@@ -59,10 +62,13 @@ final class ClearanceTests: XCTestCase {
         let index = ClearanceBuilder.index(for: chain)
         var conflicts = 0
         for pieceIndex in 2..<chain.placed.count {
+            let record = chain.placed[pieceIndex]
             for capsule in ClearanceBuilder.capsules(for: chain, pieceIndex: pieceIndex) {
                 if index.firstConflict(
                     with: capsule,
-                    ignoringPieceIndicesAtOrAbove: pieceIndex - 1
+                    ignoringArcBetween: record.startArcLength,
+                    and: record.endArcLength,
+                    window: ClearanceBuilder.selfContactWindow
                 ) != nil {
                     conflicts += 1
                 }
@@ -81,14 +87,14 @@ final class ClearanceTests: XCTestCase {
             end: Vec3(Fixed(20), Fixed(20), Fixed(24)),
             radius: Fixed(5)
         )
-        XCTAssertNil(index.firstConflict(with: high, ignoringPieceIndicesAtOrAbove: 99))
+        XCTAssertNil(index.firstConflict(with: high, ignoringArcBetween: Fixed(500), and: Fixed(501), window: Fixed(1)))
 
         let low = Capsule(
             start: Vec3(Fixed(-20), .zero, Fixed(24)),
             end: Vec3(Fixed(20), .zero, Fixed(24)),
             radius: Fixed(5)
         )
-        XCTAssertNotNil(index.firstConflict(with: low, ignoringPieceIndicesAtOrAbove: 99))
+        XCTAssertNotNil(index.firstConflict(with: low, ignoringArcBetween: Fixed(500), and: Fixed(501), window: Fixed(1)))
     }
 
     func testIndexCoversEveryPiece() {
