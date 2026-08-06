@@ -101,7 +101,9 @@ public struct TrackChain: Sendable {
             arcLength: arcLength,
             frame: local.frame,
             curvature: local.curvature,
-            bank: local.bank
+            bank: local.bank,
+            lateralCurvature: local.lateralCurvature,
+            verticalCurvature: local.verticalCurvature
         )
     }
 

@@ -70,6 +70,7 @@ x86-64 Linux and are asserted, not recomputed:
 | `testTransformChainMatchesGoldenFingerprint` | `17638089423717976749` |
 | `testCatalogGeometryMatchesGoldenFingerprint` | `13396143040586426581` |
 | `testFixedArithmeticGoldenVector` | `9673759134698064605` |
+| `testReplayMatchesGoldenFingerprint` | `15496974348914203708` |
 
 If they pass on ARM64, replays, ghosts and stored level solutions are portable between
 the two machines, which is the entire reason the simulation uses `Fixed` and CORDIC rather
@@ -112,12 +113,24 @@ meaning. This is a hard project rule.
 
 ## Current state
 
-Milestones 0 and 1 complete, 80 tests green on Linux.
+Milestones 0, 1 and 2 complete, 107 tests green on Linux.
 
 - Math: `Fixed` (Q32.32), `Trig` (CORDIC), `Vec3`, `Quat`, `Transform3`, `SplitMix64`
 - Track: 46 pieces, `TrackChain`, world-space ribbon sampling, spatial-hash clearance
+- Sim: fixed-step physics at 1/120 s, grip and banking, unloading and ballistics,
+  landing tolerance, the Runway clock, 12 cars, world rulesets
 - Debug: `OrthoSVG` plan/elevation/section projections
 - `Tools/RavelinCLI`: `catalog`, `verify`, `render [--piece <id>]`
 
-Next: Milestone 2 — fixed-step car physics over the ribbon, grip model, ballistics across
-gaps, the three clocks, and golden replays.
+Next: Milestone 3 — deck, hand, draw model, discard, parts, junction branches, hazards.
+
+## Physics calibration
+
+`Physics.corneringGrip` is an explicit arcade constant, currently 6. Real tyre grip makes
+this catalog unplayable: a Sharp Curve is a 11.5 m radius, which at 30 m/s demands 8 g.
+The constant states the arcade choice out loud instead of hiding it in a fudged mass or
+gravity. Milestone 5 retunes it against the archetype sweeps; until then, changing it
+moves every cornering test at once, which is the intended blast radius.
+
+Bank is measured from the ribbon frame, not accumulated per piece. A Bank piece must still
+be helping when the following curve arrives — that carry-over is the mechanic.

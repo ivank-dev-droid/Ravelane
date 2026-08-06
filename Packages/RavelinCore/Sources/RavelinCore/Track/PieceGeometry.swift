@@ -3,12 +3,23 @@ public struct RibbonSample: Sendable, Hashable {
     public var frame: Transform3
     public var curvature: Fixed
     public var bank: Fixed
+    public var lateralCurvature: Fixed
+    public var verticalCurvature: Fixed
 
-    public init(arcLength: Fixed, frame: Transform3, curvature: Fixed, bank: Fixed) {
+    public init(
+        arcLength: Fixed,
+        frame: Transform3,
+        curvature: Fixed,
+        bank: Fixed,
+        lateralCurvature: Fixed = .zero,
+        verticalCurvature: Fixed = .zero
+    ) {
         self.arcLength = arcLength
         self.frame = frame
         self.curvature = curvature
         self.bank = bank
+        self.lateralCurvature = lateralCurvature
+        self.verticalCurvature = verticalCurvature
     }
 
     public var position: Vec3 { frame.position }
@@ -43,7 +54,9 @@ public enum RibbonSampling {
                 rotation: a.frame.rotation
             ),
             curvature: a.curvature + (b.curvature - a.curvature) * t,
-            bank: a.bank + (b.bank - a.bank) * t
+            bank: a.bank + (b.bank - a.bank) * t,
+            lateralCurvature: a.lateralCurvature,
+            verticalCurvature: a.verticalCurvature
         )
     }
 }
@@ -58,6 +71,8 @@ public struct PieceGeometry: Sendable {
         let halfPitch: Fixed
         let halfRoll: Fixed
         let curvature: Fixed
+        let lateralCurvature: Fixed
+        let verticalCurvature: Fixed
     }
 
     public let piece: Piece
@@ -82,9 +97,18 @@ public struct PieceGeometry: Sendable {
                 worldHalfYaw: segment.yawAxis == .world ? halfYaw : .zero,
                 halfPitch: segment.pitch / Fixed(steps * 2),
                 halfRoll: segment.roll / Fixed(steps * 2),
-                curvature: segment.curvature
+                curvature: segment.curvature,
+                lateralCurvature: segment.lateralCurvature,
+                verticalCurvature: segment.verticalCurvature
             )
         }
+    }
+
+    static func bankAngle(of frame: Transform3) -> Fixed {
+        let right = frame.right
+        let up = frame.up
+        if right.y.raw == 0 && up.y.raw == 0 { return .zero }
+        return Trig.atan2(y: right.y, x: up.y)
     }
 
     static func stepCount(for length: Fixed) -> Int {
@@ -102,14 +126,15 @@ public struct PieceGeometry: Sendable {
 
         var frame = entry
         var travelled = Fixed.zero
-        var bank = Fixed.zero
 
         result.append(
             RibbonSample(
                 arcLength: .zero,
                 frame: frame,
                 curvature: plan.first?.curvature ?? .zero,
-                bank: .zero
+                bank: PieceGeometry.bankAngle(of: frame),
+                lateralCurvature: plan.first?.lateralCurvature ?? .zero,
+                verticalCurvature: plan.first?.verticalCurvature ?? .zero
             )
         )
 
@@ -129,13 +154,14 @@ public struct PieceGeometry: Sendable {
                 )
                 frame = frame.rotatedAboutWorldUp(segmentPlan.worldHalfYaw)
                 travelled += segmentPlan.stepLength
-                bank += segmentPlan.halfRoll + segmentPlan.halfRoll
                 result.append(
                     RibbonSample(
                         arcLength: travelled,
                         frame: frame,
                         curvature: segmentPlan.curvature,
-                        bank: bank
+                        bank: PieceGeometry.bankAngle(of: frame),
+                        lateralCurvature: segmentPlan.lateralCurvature,
+                        verticalCurvature: segmentPlan.verticalCurvature
                     )
                 )
             }

@@ -79,6 +79,46 @@ final class DeterminismTests: XCTestCase {
         XCTAssertEqual(fingerprint(raws), DeterminismTests.goldenCatalogFingerprint)
     }
 
+    private func replayFingerprint() -> UInt64 {
+        var track = TrackChain(catalog: PieceCatalog.cache)
+        track.appendAll([
+            "straight", "gentle_curve_l", "drop_shallow", "bank_l", "sharp_curve_l",
+            "long_run", "crest", "booster_strip", "rise_shallow", "banked_curve_r",
+            "long_run", "chicane_lr", "drop_steep", "wide_plate", "straight"
+        ].map { PieceID($0) })
+
+        let spec = CarCatalog.starting
+        let world = WorldRules.foundry
+        var car = CarState.starting(spec: spec, world: world)
+        car.speed = Fixed(22)
+
+        var raws: [Int64] = []
+        var steps = 0
+        while car.isRunning && steps < 4000 {
+            car = Physics.step(car: car, chain: track, spec: spec, world: world).car
+            if steps % 7 == 0 {
+                raws.append(contentsOf: [
+                    car.arcLength.raw, car.speed.raw,
+                    car.lateralOffset.raw, car.lateralVelocity.raw,
+                    car.integrity.raw, car.airPosition.y.raw
+                ])
+            }
+            steps += 1
+        }
+        raws.append(Int64(steps))
+        raws.append(Int64(car.mode.rawValue.count))
+        return fingerprint(raws)
+    }
+
+    func testReplayIsReproducibleWithinProcess() {
+        XCTAssertEqual(replayFingerprint(), replayFingerprint())
+    }
+
+    func testReplayMatchesGoldenFingerprint() {
+        XCTAssertEqual(replayFingerprint(), DeterminismTests.goldenReplayFingerprint)
+    }
+
+    static let goldenReplayFingerprint: UInt64 = 15496974348914203708
     static let goldenCatalogFingerprint: UInt64 = 13396143040586426581
     static let goldenChainFingerprint: UInt64 = 17638089423717976749
     static let goldenTableFingerprint: UInt64 = 11202701236706878950

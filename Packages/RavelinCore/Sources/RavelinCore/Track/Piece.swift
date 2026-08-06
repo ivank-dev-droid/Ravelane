@@ -89,6 +89,18 @@ public struct PieceSegment: Sendable, Hashable, Codable {
         let bend = (yaw * yaw + pitch * pitch).squareRoot
         return bend / length
     }
+
+    public var lateralCurvature: Fixed {
+        length.raw == 0 ? .zero : yaw / length
+    }
+
+    public var verticalCurvature: Fixed {
+        length.raw == 0 ? .zero : pitch / length
+    }
+
+    public var rollRate: Fixed {
+        length.raw == 0 ? .zero : roll / length
+    }
 }
 
 public struct Piece: Sendable, Hashable, Codable, Identifiable {
