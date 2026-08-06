@@ -64,9 +64,12 @@ public enum Archetype: String, Sendable, Hashable, Codable, CaseIterable {
     ) -> [PieceID] {
         let pieces = palette.compactMap { catalog.piece($0) }
         func pick(_ candidates: [Piece], _ count: Int) -> [Piece] {
-            Array(candidates.sorted { $0.cost == $1.cost
-                ? $0.id.rawValue < $1.id.rawValue
-                : $0.cost < $1.cost }.prefix(count))
+            var sorted = candidates
+            sorted.sort { (left: Piece, right: Piece) -> Bool in
+                if left.cost == right.cost { return left.id.rawValue < right.id.rawValue }
+                return left.cost < right.cost
+            }
+            return Array(sorted.prefix(count))
         }
 
         var chosen: [Piece] = []
@@ -97,27 +100,31 @@ public enum Archetype: String, Sendable, Hashable, Codable, CaseIterable {
         var used = Set(core)
         var chosen = core.compactMap { catalog.piece($0) }
 
-        let ranked = palette
-            .compactMap { catalog.piece($0) }
-            .filter { !used.contains($0.id) }
-            .map { (piece: $0, score: affinity(for: $0)) }
-            .sorted {
-                $0.score == $1.score
-                    ? $0.piece.id.rawValue < $1.piece.id.rawValue
-                    : $0.score > $1.score
-            }
-
-        for entry in ranked where chosen.count < slots {
-            chosen.append(entry.piece)
-            used.insert(entry.piece.id)
+        let available: [Piece] = palette.compactMap { catalog.piece($0) }
+        var remaining: [Piece] = []
+        for piece in available where !used.contains(piece.id) {
+            remaining.append(piece)
+        }
+        remaining.sort { (left: Piece, right: Piece) -> Bool in
+            let leftScore = affinity(for: left)
+            let rightScore = affinity(for: right)
+            if leftScore == rightScore { return left.id.rawValue < right.id.rawValue }
+            return leftScore > rightScore
         }
 
-        let entries = chosen.prefix(slots).map { piece -> DeckEntry in
+        for piece in remaining where chosen.count < slots {
+            chosen.append(piece)
+            used.insert(piece.id)
+        }
+
+        var entries: [DeckEntry] = []
+        for piece in chosen.prefix(slots) {
             let score = affinity(for: piece)
             let share = (score * Deck.countLimit) / 60
-            return DeckEntry(piece: piece.id, count: Swift.max(1, Swift.min(Deck.countLimit, share)))
+            let count = Swift.max(1, Swift.min(Deck.countLimit, share))
+            entries.append(DeckEntry(piece: piece.id, count: count))
         }
-        return Deck(entries: Array(entries))
+        return Deck(entries: entries)
     }
 
     public func palette(

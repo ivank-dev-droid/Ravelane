@@ -90,6 +90,14 @@ platform-dependent library call leaked into the simulation. Find it and remove i
 | `make gen` | generate the Xcode project (macOS) |
 | `make doctor` | print toolchain and compat-lib status |
 
+## Type-checker budget
+
+The Linux CI container runs Swift 6.1 while this machine runs 6.3. Long chained
+`compactMap`/`filter`/`map`/`sorted` pipelines that compile fine locally can blow the 6.1
+type-checker's budget outright — `Archetype.deck` did. Write loops and explicitly typed
+closure parameters in the shared package. `docker run --rm -v $PWD:/w -w /w swift:6.1 swift
+build --package-path Packages/RavelinCore` reproduces it locally in seconds.
+
 ## Code style
 
 No comments. None — not doc comments, not explanatory `//`, not TODOs. Names carry the
