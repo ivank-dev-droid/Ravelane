@@ -124,6 +124,44 @@ func solveAll(outputPath: String) {
     for failure in failures { print("  \(failure)") }
 }
 
+func sweep() {
+    let archetypes: [(String, Deck)] = DeckPresets.all.map { ($0.name, $0.deck) }
+    print("archetype    world        cleared  avgPieces  avgTime  avgStars")
+    for (name, deck) in archetypes {
+        for world in WorldID.allCases {
+            var cleared = 0
+            var pieces = 0
+            var time = Fixed.zero
+            var stars = 0
+            let levels = LevelCatalog.levels(in: world)
+            for level in levels {
+                var tuned = level
+                tuned.allowedPieces = deck.pieceTypes.filter { level.allowedPieces.contains($0) }
+                if tuned.allowedPieces.count < 4 { tuned.allowedPieces = level.allowedPieces }
+                let options = Solver.Options(beamWidth: 14, maxPieces: 70)
+                guard let route = Solver(level: tuned, options: options).solve() else { continue }
+                tuned.solution = route
+                tuned.parPieces = Swift.max(level.parPieces, route.count + 3)
+                let played = LevelRunner.play(level: tuned)
+                if played.result.completed { cleared += 1 }
+                pieces += played.result.piecesUsed
+                time += played.result.elapsed
+                stars += played.result.stars(for: level)
+            }
+            let count = Swift.max(1, levels.count)
+            let row = [
+                name.padding(toLength: 12, withPad: " ", startingAt: 0),
+                world.rawValue.padding(toLength: 12, withPad: " ", startingAt: 0),
+                "\(cleared)/\(levels.count)".padding(toLength: 9, withPad: " ", startingAt: 0),
+                "\(pieces / count)".padding(toLength: 11, withPad: " ", startingAt: 0),
+                (time / Fixed(count)).description.padding(toLength: 9, withPad: " ", startingAt: 0),
+                "\(Fixed(stars) / Fixed(count))"
+            ].joined()
+            print(row)
+        }
+    }
+}
+
 func verifyLevels() {
     var bad = 0
     for level in LevelCatalog.all {
@@ -152,6 +190,8 @@ case "solve":
     solveAll(outputPath: value(for: "--out", default: "Packages/RavelinCore/Sources/RavelinCore/Level/LevelSolutions.swift"))
 case "levels":
     verifyLevels()
+case "sweep":
+    sweep()
 case "verify":
     var failures = 0
     for piece in PieceCatalog.all {
