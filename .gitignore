@@ -1,0 +1,13 @@
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+.DS_Store
+*.hmap
+*.ipa
+*.dSYM.zip
+Packages/*/.build/
+Tools/*/.build/
+out/
