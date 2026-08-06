@@ -10,45 +10,48 @@ struct SettingsView: View {
             Theme.background.ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 22) {
+                VStack(alignment: .leading, spacing: 16) {
                     header
 
-                    Section(title: "Feel") {
+                    Panel(title: "Difficulty") {
+                        Picker("Difficulty", selection: $settings.difficulty) {
+                            ForEach(Difficulty.allCases) { Text($0.label).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        Text(settings.difficulty.detail)
+                            .font(.system(size: 11))
+                            .foregroundStyle(Theme.dim)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    Panel(title: "Pace") {
+                        Row(title: "Game speed", detail: "How fast the car covers the track")
+                        Picker("Game speed", selection: $settings.gameSpeed) {
+                            ForEach(GameSettings.speedChoices, id: \.value) { choice in
+                                Text(choice.label).tag(choice.value)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    Panel(title: "Feel") {
                         Toggle(isOn: $settings.soundEnabled) {
-                            Row(title: "Sound", detail: "Reel clicks, landings, checkpoints")
+                            Row(title: "Sound", detail: "A pitched click per placement, core and landing")
                         }
                         Toggle(isOn: $settings.hapticsEnabled) {
-                            Row(title: "Vibration", detail: "A pulse on every placement and impact")
+                            Row(title: "Vibration", detail: "A pulse alongside every sound")
                         }
                     }
 
-                    Section(title: "Pace") {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Row(title: "Game speed", detail: "How fast the car covers the track")
-                            Picker("Game speed", selection: $settings.gameSpeed) {
-                                ForEach(GameSettings.speedChoices, id: \.value) { choice in
-                                    Text(choice.label).tag(choice.value)
-                                }
-                            }
-                            .pickerStyle(.segmented)
-                        }
-                        Toggle(isOn: $settings.assistMode) {
-                            Row(title: "Assist", detail: "A further 30 percent slower, for learning a world")
-                        }
-                    }
-
-                    Section(title: "Build") {
+                    Panel(title: "Build") {
                         Toggle(isOn: $settings.showGhost) {
                             Row(title: "Ghost preview", detail: "Show where the selected piece would land")
                         }
-                        VStack(alignment: .leading, spacing: 10) {
-                            Row(title: "Camera distance", detail: "How far back the chase camera sits")
-                            Slider(value: $settings.cameraPullback, in: 0.6...1.8)
-                                .tint(Theme.neon)
-                        }
+                        Row(title: "Camera distance", detail: "How far back the chase camera sits")
+                        Slider(value: $settings.cameraPullback, in: 0.6...1.8).tint(Theme.neon)
                     }
 
-                    Section(title: "Catalog") {
+                    Panel(title: "Catalog") {
                         Stat(label: "Levels", value: "\(LevelCatalog.summaries.count)")
                         Stat(label: "Worlds", value: "\(WorldID.allCases.count)")
                         Stat(label: "Track pieces", value: "\(PieceCatalog.all.count)")
@@ -57,54 +60,56 @@ struct SettingsView: View {
                     }
 
                     Button {
+                        settings.tutorialSeen = false
+                        Feedback.shared.play(.place)
+                    } label: {
+                        plainButton("Show the tutorial again")
+                    }
+
+                    Button {
                         settings.reset()
                         Feedback.shared.play(.discard)
                     } label: {
-                        Text("Reset to defaults")
-                            .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.hairline, lineWidth: 1)
-                            }
+                        plainButton("Reset settings")
                     }
-                    .foregroundStyle(Theme.dim)
                 }
-                .padding(22)
+                .padding(20)
             }
         }
         .toolbar(.hidden, for: .navigationBar)
         .tint(Theme.neon)
     }
 
+    private func plainButton(_ title: String) -> some View {
+        Text(title)
+            .font(.system(size: 12, weight: .semibold, design: .monospaced))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.hairline, lineWidth: 1)
+            }
+            .foregroundStyle(Theme.dim)
+    }
+
     private var header: some View {
         HStack {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 40, height: 40)
-                    .background(Theme.panel, in: Circle())
-            }
+            BackChip { dismiss() }
             Text("SETTINGS")
                 .font(.system(size: 16, weight: .bold, design: .monospaced))
                 .kerning(4)
                 .foregroundStyle(Theme.ink)
-                .padding(.leading, 6)
             Spacer()
         }
     }
 }
 
-private struct Section<Content: View>: View {
+private struct Panel<Content: View>: View {
     let title: String
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 13) {
             Text(title.uppercased())
                 .font(.system(size: 9, weight: .bold, design: .monospaced))
                 .kerning(3)
@@ -143,9 +148,7 @@ private struct Stat: View {
 
     var body: some View {
         HStack {
-            Text(label)
-                .font(.system(size: 13))
-                .foregroundStyle(Theme.dim)
+            Text(label).font(.system(size: 13)).foregroundStyle(Theme.dim)
             Spacer()
             Text(value)
                 .font(.system(size: 13, weight: .bold, design: .monospaced))

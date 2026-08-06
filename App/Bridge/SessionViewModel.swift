@@ -16,14 +16,39 @@ final class SessionViewModel {
 
     let stepsPerSecond: Double = 120
 
-    init(level: Level) {
+    let deck: Deck
+
+    init(level: Level, deck: Deck? = nil) {
+        let chosen = deck ?? DeckStore.shared.deck(for: level.world, palette: level.allowedPieces)
         self.level = level
-        self.session = SessionViewModel.makeSession(for: level)
+        self.deck = chosen
+        self.session = SessionViewModel.makeSession(for: level, deck: chosen)
     }
 
-    private static func makeSession(for level: Level) -> Session {
-        Session(deck: level.deck(), seed: 0x5241_5645, level: level)
+    private static func makeSession(for level: Level, deck: Deck) -> Session {
+        let settings = GameSettings.shared
+        var eased = level
+        eased.startingMaterial = Int(Double(level.startingMaterial) * settings.difficulty.materialScale)
+        return Session(
+            deck: deck,
+            spec: settings.carSpec,
+            parts: settings.partIDs,
+            seed: 0x5241_5645,
+            level: eased,
+            extraHandSlots: settings.difficulty.extraHandSlots,
+            drawDelayScale: settings.difficulty.drawDelayScale
+        )
     }
+
+    struct Trace: Sendable {
+        var distance: Double
+        var speed: Double
+        var runway: Double
+        var integrity: Double
+    }
+
+    private(set) var trace: [Trace] = []
+    private var traceTick = 0
 
     var clocks: Clocks { session.clocks }
     var hand: [HandSlot] { session.hand }
@@ -45,7 +70,9 @@ final class SessionViewModel {
     }
 
     func restart() {
-        session = SessionViewModel.makeSession(for: level)
+        session = SessionViewModel.makeSession(for: level, deck: deck)
+        trace.removeAll()
+        traceTick = 0
         trackRevision += 1
         lastRejection = nil
         accumulator = 0
@@ -54,6 +81,8 @@ final class SessionViewModel {
     }
 
     func togglePause() { isPaused.toggle() }
+
+    func setPaused(_ value: Bool) { isPaused = value }
 
     func place(slot: Int) {
         guard session.isRunning else { return }
@@ -104,6 +133,19 @@ final class SessionViewModel {
             budget += 1
         }
         announce(from: before, objectivesBefore: objectivesBefore)
+        recordTrace()
+    }
+
+    private func recordTrace() {
+        traceTick += 1
+        guard traceTick % 6 == 0 else { return }
+        trace.append(Trace(
+            distance: session.car.distanceTravelled.approximateDouble,
+            speed: session.car.speed.approximateDouble,
+            runway: session.clocks.runwaySeconds.approximateDouble,
+            integrity: session.car.integrity.approximateDouble
+        ))
+        if trace.count > 900 { trace.removeFirst(300) }
     }
 
     private func announce(from index: Int, objectivesBefore: ObjectiveState) {

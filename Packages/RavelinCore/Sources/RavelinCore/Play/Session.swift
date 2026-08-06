@@ -89,9 +89,13 @@ public struct Session: Sendable {
         seed: UInt64 = 0x5241_5645_4C49_4E01,
         plinth: [PieceID] = [PieceID("long_run"), PieceID("stub")],
         material: Int = Session.startingMaterial,
-        level: Level? = nil
+        level: Level? = nil,
+        extraHandSlots: Int = 0,
+        drawDelayScale: Fixed = .one
     ) {
-        let aggregated = PartCatalog.effects(parts)
+        var aggregated = PartCatalog.effects(parts)
+        aggregated.extraHandSlots += extraHandSlots
+        aggregated.drawDelayScale *= drawDelayScale
         self.catalog = catalog
         self.deck = deck
         self.world = level?.rules ?? world

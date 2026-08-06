@@ -2,13 +2,12 @@ import SwiftUI
 
 struct LoadingView: View {
     let caption: String
-    @State private var phase: CGFloat = 0
 
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
 
-            VStack(spacing: 34) {
+            VStack(spacing: 30) {
                 Spacer()
 
                 Text("RAVELIN")
@@ -24,9 +23,9 @@ struct LoadingView: View {
 
                 Spacer()
 
-                UnspoolingRibbon(phase: phase)
-                    .frame(height: 92)
-                    .padding(.horizontal, 34)
+                UnspoolingRibbon()
+                    .frame(height: 96)
+                    .padding(.horizontal, 30)
 
                 Text(caption.uppercased())
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
@@ -36,77 +35,91 @@ struct LoadingView: View {
                 Spacer()
             }
         }
-        .onAppear {
-            withAnimation(.linear(duration: 2.6).repeatForever(autoreverses: false)) {
-                phase = 1
-            }
-        }
     }
 }
 
-private struct UnspoolingRibbon: View {
-    var phase: CGFloat
-
+struct UnspoolingRibbon: View {
     var body: some View {
-        Canvas { context, size in
-            let midY = size.height / 2
-            let amplitude = size.height * 0.32
-            let wavelength = size.width / 1.6
-
-            func ribbon(offset: CGFloat, lift: CGFloat) -> Path {
-                var path = Path()
-                var x: CGFloat = 0
-                while x <= size.width {
-                    let t = (x / wavelength) + offset
-                    let y = midY + sin(t * .pi * 2) * amplitude + lift
-                    if x == 0 { path.move(to: CGPoint(x: x, y: y)) }
-                    else { path.addLine(to: CGPoint(x: x, y: y)) }
-                    x += 3
-                }
-                return path
+        TimelineView(.animation) { timeline in
+            Canvas { context, size in
+                let now = timeline.date.timeIntervalSinceReferenceDate
+                draw(context: &context, size: size, time: now)
             }
+        }
+    }
 
-            let travel = phase
-            let edgeGap = size.height * 0.13
+    private func draw(context: inout GraphicsContext, size: CGSize, time: TimeInterval) {
+        let midY = size.height / 2
+        let amplitude = size.height * 0.30
+        let wavelength = size.width / 1.5
+        let travel = CGFloat(time.truncatingRemainder(dividingBy: 4) / 4)
+        let edgeGap = size.height * 0.14
 
-            context.stroke(
-                ribbon(offset: travel, lift: -edgeGap),
-                with: .linearGradient(
-                    Gradient(colors: [Theme.blue.opacity(0.15), Theme.neon, Theme.blue.opacity(0.15)]),
-                    startPoint: .zero,
-                    endPoint: CGPoint(x: size.width, y: 0)
-                ),
-                lineWidth: 2.5
-            )
-            context.stroke(
-                ribbon(offset: travel, lift: edgeGap),
-                with: .linearGradient(
-                    Gradient(colors: [Theme.blue.opacity(0.15), Theme.neon, Theme.blue.opacity(0.15)]),
-                    startPoint: .zero,
-                    endPoint: CGPoint(x: size.width, y: 0)
-                ),
-                lineWidth: 2.5
-            )
+        func height(at x: CGFloat) -> CGFloat {
+            let t = (x / wavelength) + travel * 2
+            return midY + sin(t * .pi * 2) * amplitude
+        }
 
-            var rungs = Path()
-            var step: CGFloat = 0
-            while step <= size.width {
-                let t = (step / wavelength) + travel
-                let base = midY + sin(t * .pi * 2) * amplitude
+        func rail(lift: CGFloat) -> Path {
+            var path = Path()
+            var x: CGFloat = 0
+            while x <= size.width {
+                let y = height(at: x) + lift
+                if x == 0 { path.move(to: CGPoint(x: x, y: y)) } else { path.addLine(to: CGPoint(x: x, y: y)) }
+                x += 3
+            }
+            return path
+        }
+
+        let shading = GraphicsContext.Shading.linearGradient(
+            Gradient(colors: [Theme.neon.opacity(0.05), Theme.neon, Theme.blue, Theme.blue.opacity(0.05)]),
+            startPoint: .zero,
+            endPoint: CGPoint(x: size.width, y: 0)
+        )
+
+        var deck = Path()
+        deck.addPath(rail(lift: -edgeGap))
+        var back = Path()
+        var x = size.width
+        while x >= 0 {
+            let y = height(at: x) + edgeGap
+            if x == size.width { back.move(to: CGPoint(x: x, y: y)) } else { back.addLine(to: CGPoint(x: x, y: y)) }
+            x -= 3
+        }
+        deck.addPath(back)
+        deck.closeSubpath()
+        context.fill(deck, with: .color(Theme.neon.opacity(0.10)))
+
+        var rungs = Path()
+        var step = -(travel * 34)
+        while step <= size.width {
+            if step >= 0 {
+                let base = height(at: step)
                 rungs.move(to: CGPoint(x: step, y: base - edgeGap))
                 rungs.addLine(to: CGPoint(x: step, y: base + edgeGap))
-                step += 16
             }
-            context.stroke(rungs, with: .color(Theme.neon.opacity(0.28)), lineWidth: 1)
-
-            let headX = size.width * (0.12 + 0.76 * abs(sin(travel * .pi)))
-            let headT = (headX / wavelength) + travel
-            let headY = midY + sin(headT * .pi * 2) * amplitude
-            let head = Path(ellipseIn: CGRect(x: headX - 5, y: headY - 5, width: 10, height: 10))
-            context.fill(head, with: .color(Theme.cold))
-            context.stroke(head, with: .color(.white.opacity(0.9)), lineWidth: 1.5)
+            step += 17
         }
-        .drawingGroup()
+        context.stroke(rungs, with: .color(Theme.neon.opacity(0.30)), lineWidth: 1)
+
+        context.stroke(rail(lift: -edgeGap), with: shading, lineWidth: 2.5)
+        context.stroke(rail(lift: edgeGap), with: shading, lineWidth: 2.5)
+
+        let cycle = time.truncatingRemainder(dividingBy: 2.4) / 2.4
+        let headX = size.width * CGFloat(cycle)
+        let headY = height(at: headX)
+
+        for trail in 1...6 {
+            let back = headX - CGFloat(trail) * 9
+            guard back > 0 else { continue }
+            let dot = Path(ellipseIn: CGRect(x: back - 3, y: height(at: back) - 3, width: 6, height: 6))
+            context.fill(dot, with: .color(Theme.cold.opacity(0.5 - Double(trail) * 0.07)))
+        }
+
+        let head = Path(ellipseIn: CGRect(x: headX - 6, y: headY - 6, width: 12, height: 12))
+        context.fill(head, with: .color(Theme.cold))
+        let halo = Path(ellipseIn: CGRect(x: headX - 12, y: headY - 12, width: 24, height: 24))
+        context.stroke(halo, with: .color(Theme.cold.opacity(0.35)), lineWidth: 1.5)
     }
 }
 
@@ -119,6 +132,7 @@ enum Theme {
     )
     static let void = Color(red: 0.043, green: 0.016, blue: 0.094)
     static let panel = Color.white.opacity(0.06)
+    static let panelStrong = Color.white.opacity(0.11)
     static let hairline = Color.white.opacity(0.12)
     static let ink = Color(red: 0.929, green: 0.894, blue: 0.980)
     static let dim = Color(red: 0.612, green: 0.561, blue: 0.722)

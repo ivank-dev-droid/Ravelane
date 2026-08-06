@@ -14,10 +14,14 @@ struct RavelinApp: App {
 struct RootView: View {
     @State private var ready = false
     @State private var summaries: [LevelSummary] = []
+    @State private var showTutorial = !GameSettings.shared.tutorialSeen
 
     var body: some View {
         Group {
-            if ready {
+            if ready && showTutorial {
+                TutorialView { showTutorial = false }
+                    .transition(.opacity)
+            } else if ready {
                 NavigationStack {
                     MainMenuView(summaries: summaries)
                 }
@@ -29,11 +33,12 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.45), value: ready)
+        .animation(.easeInOut(duration: 0.35), value: showTutorial)
         .task {
             async let warm: [LevelSummary] = Task.detached(priority: .userInitiated) {
                 LevelCatalog.summaries
             }.value
-            async let floor: Void = Task.sleep(for: .milliseconds(1400))
+            async let floor: Void = Task.sleep(for: .milliseconds(2500))
             summaries = (try? await warm) ?? []
             _ = try? await floor
             ready = true
@@ -74,17 +79,10 @@ struct MainMenuView: View {
                     .foregroundStyle(Theme.dim)
             }
             Spacer()
-            NavigationLink {
-                SettingsView()
-            } label: {
-                Image(systemName: "slider.horizontal.3")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
-                    .frame(width: 44, height: 44)
-                    .background(Theme.panel, in: RoundedRectangle(cornerRadius: 14))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 14).strokeBorder(Theme.hairline, lineWidth: 1)
-                    }
+            HStack(spacing: 8) {
+                MenuChip(icon: "book.closed") { CodexView() }
+                MenuChip(icon: "chart.bar") { StatsView() }
+                MenuChip(icon: "slider.horizontal.3") { SettingsView() }
             }
         }
         .padding(.horizontal, 22)
@@ -112,9 +110,9 @@ struct MainMenuView: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 104), spacing: 12)], spacing: 12) {
                 ForEach(summaries.filter { $0.world == world }) { summary in
                     NavigationLink {
-                        LevelLoader(summary: summary)
+                        BriefingView(summary: summary)
                     } label: {
-                        LevelTile(summary: summary)
+                        LevelTile(summary: summary, stars: ProgressStore.shared.stars(for: summary.id))
                     }
                     .buttonStyle(.plain)
                 }
@@ -151,8 +149,29 @@ private struct WorldChip: View {
     }
 }
 
+struct MenuChip<Destination: View>: View {
+    let icon: String
+    @ViewBuilder let destination: Destination
+
+    var body: some View {
+        NavigationLink {
+            destination
+        } label: {
+            Image(systemName: icon)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .frame(width: 42, height: 42)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 13))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 13).strokeBorder(Theme.hairline, lineWidth: 1)
+                }
+        }
+    }
+}
+
 private struct LevelTile: View {
     let summary: LevelSummary
+    let stars: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -161,11 +180,7 @@ private struct LevelTile: View {
                     .font(.system(size: 26, weight: .heavy, design: .monospaced))
                     .foregroundStyle(Theme.ink)
                 Spacer()
-                if !summary.isSolved {
-                    Image(systemName: "lock.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Theme.dim)
-                }
+                StarRow(count: stars)
             }
             Divider().overlay(Theme.hairline)
             HStack(spacing: 8) {
@@ -181,28 +196,6 @@ private struct LevelTile: View {
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: 16))
         .overlay {
             RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.hairline, lineWidth: 1)
-        }
-    }
-}
-
-struct LevelLoader: View {
-    let summary: LevelSummary
-    @State private var level: Level?
-
-    var body: some View {
-        Group {
-            if let level {
-                GameView(level: level)
-                    .navigationBarBackButtonHidden()
-            } else {
-                LoadingView(caption: "laying the plinth")
-            }
-        }
-        .task {
-            let id = summary.id
-            level = await Task.detached(priority: .userInitiated) {
-                LevelCatalog.level(id)
-            }.value
         }
     }
 }
