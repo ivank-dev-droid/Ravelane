@@ -90,6 +90,21 @@ platform-dependent library call leaked into the simulation. Find it and remove i
 | `make gen` | generate the Xcode project (macOS) |
 | `make doctor` | print toolchain and compat-lib status |
 
+## CI is out of Actions minutes
+
+The repository is private, and macOS runners bill at ten times the rate, so the free
+allowance is gone: pushes no longer schedule runs and manually dispatched jobs are
+cancelled while queued. Until it resets, is paid for, or the repository is made public,
+**nothing compiles the iOS layer.** `App/` is written blind.
+
+What still works locally, and should be run before every push:
+
+    make test                                   # 147 tests, the whole simulation
+    for f in $(find App -name '*.swift'); do swiftc -parse "$f"; done
+
+The second only parses; it catches structural mistakes, not type errors. Treat anything
+under `App/` as unverified until a Mac says otherwise.
+
 ## Type-checker budget
 
 The Linux CI container runs Swift 6.1 while this machine runs 6.3. Long chained

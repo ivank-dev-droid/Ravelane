@@ -75,7 +75,7 @@ final class Feedback {
         engine.mainMixerNode.outputVolume = 0.7
 
         do {
-            try AVAudioSession.sharedInstance().setCategory(.ambient, options: [.mixWithOthers])
+            try AVAudioSession.sharedInstance().setCategory(.ambient)
             try AVAudioSession.sharedInstance().setActive(true)
             try engine.start()
             node.play()
