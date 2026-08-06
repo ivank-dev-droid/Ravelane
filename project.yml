@@ -1,0 +1,45 @@
+name: Ravelin
+options:
+  bundleIdPrefix: com.ravelin
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  RavelinCore:
+    path: Packages/RavelinCore
+
+targets:
+  Ravelin:
+    type: application
+    platform: iOS
+    sources:
+      - path: App
+    dependencies:
+      - package: RavelinCore
+        product: RavelinCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ravelin.game
+        PRODUCT_NAME: Ravelin
+        MARKETING_VERSION: "0.4"
+        CURRENT_PROJECT_VERSION: "1"
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UIStatusBarHidden: YES
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGN_IDENTITY: ""
+
+schemes:
+  Ravelin:
+    build:
+      targets:
+        Ravelin: all
+    run:
+      config: Debug

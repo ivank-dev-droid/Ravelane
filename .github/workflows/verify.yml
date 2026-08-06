@@ -35,3 +35,27 @@ jobs:
         run: swift test --package-path Packages/RavelinCore
       - name: Catalog
         run: swift run --package-path Tools/RavelinCLI RavelinCLI verify
+
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Architecture
+        run: uname -m && xcodebuild -version
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build for the simulator
+        run: |
+          xcodebuild build \
+            -project Ravelin.xcodeproj \
+            -scheme Ravelin \
+            -destination 'generic/platform=iOS Simulator' \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify --quiet || xcodebuild build \
+            -project Ravelin.xcodeproj \
+            -scheme Ravelin \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO
