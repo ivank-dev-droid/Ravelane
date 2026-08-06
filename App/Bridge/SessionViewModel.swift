@@ -58,12 +58,17 @@ final class SessionViewModel {
     func place(slot: Int) {
         guard session.isRunning else { return }
         lastRejection = session.place(slot: slot)
-        if lastRejection == nil { trackRevision += 1 }
+        if lastRejection == nil {
+            trackRevision += 1
+            Feedback.shared.play(.place)
+        } else {
+            Feedback.shared.play(.reject)
+        }
     }
 
     func discard(slot: Int) {
         guard session.isRunning else { return }
-        session.discard(slot: slot)
+        if session.discard(slot: slot) == nil { Feedback.shared.play(.discard) }
     }
 
     func previewSamples(for id: PieceID) -> [RibbonSample] {
@@ -86,14 +91,39 @@ final class SessionViewModel {
         defer { lastTimestamp = timestamp }
         guard let previous = lastTimestamp else { return }
 
-        let delta = min(0.25, max(0, timestamp - previous))
+        let scale = GameSettings.shared.effectiveSpeed
+        let delta = min(0.25, max(0, timestamp - previous)) * scale
         accumulator += delta
         let stepSeconds = 1.0 / stepsPerSecond
         var budget = 0
+        let before = session.simEvents.count
+        let objectivesBefore = session.objectives
         while accumulator >= stepSeconds && budget < 40 {
             session.step()
             accumulator -= stepSeconds
             budget += 1
+        }
+        announce(from: before, objectivesBefore: objectivesBefore)
+    }
+
+    private func announce(from index: Int, objectivesBefore: ObjectiveState) {
+        if session.objectives.collectedCount > objectivesBefore.collectedCount {
+            Feedback.shared.play(.core)
+        }
+        if session.objectives.nextCheckpoint > objectivesBefore.nextCheckpoint {
+            Feedback.shared.play(.checkpoint)
+        }
+        if session.objectives.reachedGoal && !objectivesBefore.reachedGoal {
+            Feedback.shared.play(.win)
+            return
+        }
+        guard index < session.simEvents.count else { return }
+        for event in session.simEvents[index...] {
+            switch event {
+            case .landed: Feedback.shared.play(.land)
+            case .crashed: Feedback.shared.play(.crash)
+            default: break
+            }
         }
     }
 }

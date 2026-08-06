@@ -22,7 +22,7 @@ struct GameView: View {
                 scene.update(model: model)
             }
             .ignoresSafeArea()
-            .background(Color(red: 0.043, green: 0.016, blue: 0.094))
+            .background(Theme.void)
 
             VStack(spacing: 0) {
                 Header(model: model, onExit: { dismiss() })
@@ -40,7 +40,8 @@ struct GameView: View {
         }
         .preferredColorScheme(.dark)
         .onChange(of: selectedSlot) { _, slot in
-            guard let slot, let piece = model.hand[safe: slot]?.piece else {
+            guard GameSettings.shared.showGhost,
+                  let slot, let piece = model.hand[safe: slot]?.piece else {
                 scene.hideGhost()
                 return
             }

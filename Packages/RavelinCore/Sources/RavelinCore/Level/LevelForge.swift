@@ -1,5 +1,5 @@
 public enum LevelForge {
-    public static let levelsPerWorld = 10
+    public static let levelsPerWorld = 15
 
     static func twoDigits(_ value: Int) -> String {
         value < 10 ? "0\(value)" : "\(value)"
@@ -51,11 +51,34 @@ public enum LevelForge {
         public var route: [PieceID]
     }
 
+    public static func summary(world: WorldID, index: Int) -> LevelSummary {
+        let id = LevelID("\(world.rawValue)_\(twoDigits(index + 1))")
+        let solution = LevelSolutions.table[id.rawValue]?.count ?? 0
+        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
+        let routeLength = 12 + index * 2 + checkpointCount * 5
+        return LevelSummary(
+            id: id,
+            name: "\(world.displayName) \(index + 1)",
+            world: world,
+            parPieces: Swift.max(16 + index * 2 + checkpointCount * 6, solution + 3),
+            coreCount: 3 + index / 3,
+            checkpointCount: checkpointCount,
+            routeLength: routeLength,
+            isSolved: solution > 0
+        )
+    }
+
+    public static func rebuild(world: WorldID, index: Int) -> Level? {
+        let id = LevelID("\(world.rawValue)_\(twoDigits(index + 1))")
+        guard let stored = LevelSolutions.table[id.rawValue], !stored.isEmpty else { return nil }
+        return assemble(world: world, index: index, route: stored.map { PieceID($0) })
+    }
+
     public static func forge(world: WorldID, index: Int, seed: UInt64 = 0x5241_5645_4C49_4E10) -> Forged {
         let rules = world.rules
         let ids = palette(for: world)
         let plinth = [PieceID("long_run"), PieceID("stub")]
-        let checkpointCount = index < 2 ? 0 : (index < 6 ? 1 : 2)
+        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
         let routeLength = 12 + index * 2 + checkpointCount * 5
         let walker = RouteWalker(palette: Archetype.core(from: ids), rules: rules)
 
@@ -89,13 +112,25 @@ public enum LevelForge {
             )
         }
 
+        let assembled = assemble(world: world, index: index, route: route.pieces)
+        return Forged(level: assembled, route: route.pieces)
+    }
+
+    public static func assemble(world: WorldID, index: Int, route: [PieceID]) -> Level {
+        let ids = palette(for: world)
+        let plinth = [PieceID("long_run"), PieceID("stub")]
+        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
+
+        var chain = TrackChain(catalog: PieceCatalog.cache)
+        chain.appendAll(plinth)
+        chain.appendAll(route)
+
         var decorRng = derivedStream(
-            seed: seed &+ 977,
+            seed: 0x5241_5645_4C49_4E10 &+ 977,
             purpose: .levelGeneration,
             index: UInt64(index)
         )
 
-        let chain = route.chain
         let total = chain.totalLength
         let plinthEnd = chain.placed[plinth.count - 1].endArcLength
 
@@ -109,7 +144,9 @@ public enum LevelForge {
             guard let sample = point(at: fraction) else { continue }
             checkpoints.append(Gate(position: sample.position, normal: sample.tangent, radius: Fixed(24)))
         }
-        let goal = checkpoints.removeLast()
+        let goal = checkpoints.isEmpty
+            ? Gate(position: chain.headFrame.position, normal: chain.headFrame.forward, radius: Fixed(24))
+            : checkpoints.removeLast()
 
         var cores: [Core] = []
         let coreCount = 3 + index / 3
@@ -120,6 +157,16 @@ public enum LevelForge {
             cores.append(Core(position: sample.position + sample.lateral * lateral))
         }
 
+        var routeCapsules: [Capsule] = []
+        for pieceIndex in 0..<chain.placed.count {
+            routeCapsules.append(contentsOf: ClearanceBuilder.capsules(for: chain, pieceIndex: pieceIndex))
+        }
+
+        func clearsRoute(_ volume: Volume) -> Bool {
+            for capsule in routeCapsules where volume.intersects(capsule) { return false }
+            return true
+        }
+
         var forbidden: [Volume] = []
         let blockCount = index >= 2 ? 1 + index / 3 : 0
         for slot in 0..<blockCount {
@@ -127,14 +174,21 @@ public enum LevelForge {
             guard let sample = point(at: fraction) else { continue }
             let sideways = decorRng.nextBool(chanceOutOf: 2) ? Fixed(1) : Fixed(-1)
             let radius = Fixed(14 + decorRng.nextInt(in: 0...8))
-            let distance = radius + Fixed(16)
-            forbidden.append(.sphere(
-                center: sample.position + sample.lateral * sideways * distance,
-                radius: radius
-            ))
+            var pushed = radius + Fixed(16)
+            var placed: Volume?
+            for _ in 0..<8 {
+                let candidate = Volume.sphere(
+                    center: sample.position + sample.lateral * sideways * pushed,
+                    radius: radius
+                )
+                if clearsRoute(candidate) { placed = candidate; break }
+                pushed += Fixed(10)
+            }
+            if let placed { forbidden.append(placed) }
         }
 
-        let level = Level(
+        let routeLength = 12 + index * 2 + checkpointCount * 5
+        return Level(
             id: LevelID("\(world.rawValue)_\(twoDigits(index + 1))"),
             name: "\(world.displayName) \(index + 1)",
             world: world,
@@ -145,11 +199,10 @@ public enum LevelForge {
             checkpoints: checkpoints,
             cores: cores,
             forbidden: forbidden,
-            parPieces: route.pieces.count + 4,
+            parPieces: Swift.max(16 + index * 2 + checkpointCount * 6, route.count + 3),
             targetTime: Fixed(20 + routeLength * 2),
-            solution: route.pieces
+            solution: route
         )
-        return Forged(level: level, route: route.pieces)
     }
 
     public static func generateAll(seed: UInt64 = 0x5241_5645_4C49_4E10) -> [Level] {
@@ -163,28 +216,60 @@ public enum LevelForge {
     }
 }
 
+public struct LevelSummary: Sendable, Hashable, Codable, Identifiable {
+    public var id: LevelID
+    public var name: String
+    public var world: WorldID
+    public var parPieces: Int
+    public var coreCount: Int
+    public var checkpointCount: Int
+    public var routeLength: Int
+    public var isSolved: Bool
+
+    public var number: Int {
+        Int(id.rawValue.split(separator: "_").last.flatMap { Int($0) } ?? 0)
+    }
+}
+
 public enum LevelCatalog {
-    public static let all: [Level] = {
-        var result: [Level] = []
+    public static let summaries: [LevelSummary] = {
+        var result: [LevelSummary] = []
         for world in WorldID.allCases {
             var floor = 0
             for index in 0..<LevelForge.levelsPerWorld {
-                var level = LevelForge.generate(world: world, index: index)
-                level.solution = LevelSolutions.table[level.id.rawValue]?.map { PieceID($0) } ?? []
-                if !level.solution.isEmpty {
-                    level.parPieces = Swift.max(level.parPieces, level.solution.count + 3)
-                }
-                floor = Swift.max(floor, level.parPieces)
-                level.parPieces = floor
-                result.append(level)
+                var summary = LevelForge.summary(world: world, index: index)
+                floor = Swift.max(floor, summary.parPieces)
+                summary.parPieces = floor
+                result.append(summary)
             }
         }
         return result
     }()
 
-    public static func level(_ id: LevelID) -> Level? { all.first { $0.id == id } }
+    public static func summaries(in world: WorldID) -> [LevelSummary] {
+        summaries.filter { $0.world == world }
+    }
 
-    public static func levels(in world: WorldID) -> [Level] { all.filter { $0.world == world } }
+    public static func summary(_ id: LevelID) -> LevelSummary? {
+        summaries.first { $0.id == id }
+    }
+
+    public static func level(_ id: LevelID) -> Level? {
+        guard let summary = summary(id) else { return nil }
+        guard var level = LevelForge.rebuild(world: summary.world, index: summary.number - 1) else {
+            return nil
+        }
+        level.parPieces = summary.parPieces
+        return level
+    }
+
+    public static var all: [Level] {
+        summaries.compactMap { level($0.id) }
+    }
+
+    public static func levels(in world: WorldID) -> [Level] {
+        summaries(in: world).compactMap { level($0.id) }
+    }
 
     public static var solved: [Level] { all.filter { !$0.solution.isEmpty } }
 }

@@ -82,7 +82,6 @@ func solveAll(outputPath: String) {
             let level = forged.level
 
             var candidates: [[PieceID]] = []
-            if let route = Solver(level: level).solve() { candidates.append(route) }
             if !forged.route.isEmpty { candidates.append(forged.route) }
 
             var accepted: (route: [PieceID], time: Fixed, par: Int)?

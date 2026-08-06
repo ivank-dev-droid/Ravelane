@@ -96,8 +96,9 @@ final class TrackScene {
         car.orientation = frame.rotation.simd
 
         let runway = model.clocks.runway.float
-        let pullBack = min(34, 14 + runway * 0.05)
-        let lift = min(16, 6 + runway * 0.02)
+        let dial = Float(GameSettings.shared.cameraPullback)
+        let pullBack = min(46, 14 + runway * 0.05) * dial
+        let lift = min(20, 6 + runway * 0.02) * dial
         let eye = frame.position.simd - frame.forward.simd * pullBack + SIMD3<Float>(0, lift, 0)
         camera.position = eye
         camera.look(at: frame.position.simd + frame.forward.simd * 18,

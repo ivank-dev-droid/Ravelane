@@ -2,10 +2,10 @@ import XCTest
 @testable import RavelinCore
 
 final class LevelTests: XCTestCase {
-    func testSixtyLevelsAcrossSixWorlds() {
-        XCTAssertEqual(LevelCatalog.all.count, 60)
+    func testEveryWorldIsFullyPopulated() {
+        XCTAssertEqual(LevelCatalog.summaries.count, WorldID.allCases.count * LevelForge.levelsPerWorld)
         for world in WorldID.allCases {
-            XCTAssertEqual(LevelCatalog.levels(in: world).count, LevelForge.levelsPerWorld,
+            XCTAssertEqual(LevelCatalog.summaries(in: world).count, LevelForge.levelsPerWorld,
                            "\(world) is short of levels")
         }
     }
@@ -67,7 +67,7 @@ final class LevelTests: XCTestCase {
         let first = LevelCatalog.levels(in: .foundry).first!
         let last = LevelCatalog.levels(in: .foundry).last!
         XCTAssertEqual(first.checkpoints.count, 0)
-        XCTAssertEqual(last.checkpoints.count, 2)
+        XCTAssertGreaterThanOrEqual(last.checkpoints.count, 2)
         XCTAssertGreaterThan(last.cores.count, first.cores.count)
     }
 
@@ -129,6 +129,25 @@ final class LevelTests: XCTestCase {
         let failed = LevelResult(completed: false, piecesUsed: 1, elapsed: .zero,
                                  coresCollected: 0, coreTotal: 1, crashReason: .fell)
         XCTAssertEqual(failed.stars(for: level), 0)
+    }
+
+    func testSummariesAreCheapAndComplete() {
+        for summary in LevelCatalog.summaries {
+            XCTAssertTrue(summary.isSolved, "\(summary.id) has no stored solution")
+            XCTAssertGreaterThan(summary.parPieces, 0)
+            XCTAssertGreaterThan(summary.coreCount, 0)
+            XCTAssertNotNil(LevelCatalog.level(summary.id), "\(summary.id) cannot be rebuilt")
+        }
+    }
+
+    func testRebuiltLevelMatchesItsSummary() {
+        for summary in LevelCatalog.summaries {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            XCTAssertEqual(level.id, summary.id)
+            XCTAssertEqual(level.cores.count, summary.coreCount)
+            XCTAssertEqual(level.checkpoints.count, summary.checkpointCount)
+            XCTAssertEqual(level.parPieces, summary.parPieces)
+        }
     }
 
     func testLevelPlaythroughIsDeterministic() {
