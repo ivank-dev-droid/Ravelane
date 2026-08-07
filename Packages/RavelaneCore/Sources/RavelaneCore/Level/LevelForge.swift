@@ -5,6 +5,32 @@ public enum LevelForge {
         value < 10 ? "0\(value)" : "\(value)"
     }
 
+    public static func checkpointCount(for index: Int) -> Int {
+        if index < 5 { return 0 }
+        if index < 9 { return 1 }
+        if index < 13 { return 2 }
+        return 3
+    }
+
+    public static func routeLength(for index: Int) -> Int {
+        if index < 5 { return 4 + index * 2 }
+        return 12 + (index - 5) * 3 + checkpointCount(for: index) * 4
+    }
+
+    public static func coreCount(for index: Int) -> Int {
+        if index < 3 { return 2 }
+        return 3 + (index - 3) / 3
+    }
+
+    public static func blockCount(for index: Int) -> Int {
+        if index < 5 { return 0 }
+        return 1 + (index - 5) / 4
+    }
+
+    public static func basePar(for index: Int) -> Int {
+        routeLength(for: index) + 6 + index
+    }
+
     public static func palette(for world: WorldID) -> [PieceID] {
         let ids: [String]
         switch world {
@@ -54,14 +80,14 @@ public enum LevelForge {
     public static func summary(world: WorldID, index: Int) -> LevelSummary {
         let id = LevelID("\(world.rawValue)_\(twoDigits(index + 1))")
         let solution = LevelSolutions.table[id.rawValue]?.count ?? 0
-        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
-        let routeLength = 12 + index * 2 + checkpointCount * 5
+        let checkpointCount = LevelForge.checkpointCount(for: index)
+        let routeLength = LevelForge.routeLength(for: index)
         return LevelSummary(
             id: id,
             name: "\(world.displayName) \(index + 1)",
             world: world,
-            parPieces: Swift.max(16 + index * 2 + checkpointCount * 6, solution + 3),
-            coreCount: 3 + index / 3,
+            parPieces: Swift.max(LevelForge.basePar(for: index), solution + 3),
+            coreCount: LevelForge.coreCount(for: index),
             checkpointCount: checkpointCount,
             routeLength: routeLength,
             isSolved: solution > 0
@@ -78,8 +104,8 @@ public enum LevelForge {
         let rules = world.rules
         let ids = palette(for: world)
         let plinth = [PieceID("long_run"), PieceID("stub")]
-        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
-        let routeLength = 12 + index * 2 + checkpointCount * 5
+        let checkpointCount = LevelForge.checkpointCount(for: index)
+        let routeLength = LevelForge.routeLength(for: index)
         let walker = RouteWalker(palette: Archetype.core(from: ids), rules: rules)
 
         var walk: RouteWalker.Walk?
@@ -119,7 +145,7 @@ public enum LevelForge {
     public static func assemble(world: WorldID, index: Int, route: [PieceID]) -> Level {
         let ids = palette(for: world)
         let plinth = [PieceID("long_run"), PieceID("stub")]
-        let checkpointCount = index < 2 ? 0 : (index < 7 ? 1 : (index < 12 ? 2 : 3))
+        let checkpointCount = LevelForge.checkpointCount(for: index)
 
         var chain = TrackChain(catalog: PieceCatalog.cache)
         chain.appendAll(plinth)
@@ -149,7 +175,7 @@ public enum LevelForge {
             : checkpoints.removeLast()
 
         var cores: [Core] = []
-        let coreCount = 3 + index / 3
+        let coreCount = LevelForge.coreCount(for: index)
         for slot in 0..<coreCount {
             let fraction = Fixed(slot + 1, over: coreCount + 1)
             guard let sample = point(at: fraction) else { continue }
@@ -168,7 +194,7 @@ public enum LevelForge {
         }
 
         var forbidden: [Volume] = []
-        let blockCount = index >= 2 ? 1 + index / 3 : 0
+        let blockCount = LevelForge.blockCount(for: index)
         for slot in 0..<blockCount {
             let fraction = Fixed(slot + 1, over: blockCount + 1)
             guard let sample = point(at: fraction) else { continue }
@@ -187,7 +213,7 @@ public enum LevelForge {
             if let placed { forbidden.append(placed) }
         }
 
-        let routeLength = 12 + index * 2 + checkpointCount * 5
+        let routeLength = LevelForge.routeLength(for: index)
         return Level(
             id: LevelID("\(world.rawValue)_\(twoDigits(index + 1))"),
             name: "\(world.displayName) \(index + 1)",
@@ -199,7 +225,7 @@ public enum LevelForge {
             checkpoints: checkpoints,
             cores: cores,
             forbidden: forbidden,
-            parPieces: Swift.max(16 + index * 2 + checkpointCount * 6, route.count + 3),
+            parPieces: Swift.max(LevelForge.basePar(for: index), route.count + 3),
             targetTime: Fixed(20 + routeLength * 2),
             solution: route
         )

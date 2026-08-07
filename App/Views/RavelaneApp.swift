@@ -69,8 +69,10 @@ struct MainMenuView: View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("RAVELANE")
-                    .font(.system(size: 30, weight: .heavy, design: .monospaced))
-                    .kerning(8)
+                    .font(.system(size: 26, weight: .heavy, design: .monospaced))
+                    .kerning(4)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(Theme.ink)
                     .shadow(color: Theme.neon.opacity(0.6), radius: 16)
                 Text("you never steer")
@@ -174,14 +176,13 @@ private struct LevelTile: View {
     let stars: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("\(summary.number)")
-                    .font(.system(size: 26, weight: .heavy, design: .monospaced))
-                    .foregroundStyle(Theme.ink)
-                Spacer()
-                StarRow(count: stars)
-            }
+        VStack(alignment: .leading, spacing: 6) {
+            Text("\(summary.number)")
+                .font(.system(size: 26, weight: .heavy, design: .monospaced))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .foregroundStyle(Theme.ink)
+            StarRow(count: stars)
             Divider().overlay(Theme.hairline)
             HStack(spacing: 8) {
                 Label("\(summary.parPieces)", systemImage: "square.stack.3d.up")

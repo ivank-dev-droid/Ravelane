@@ -106,7 +106,7 @@ struct SettingsView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .tint(Theme.neon)
-        .sheet(isPresented: $showPrivacy) {
+        .fullScreenCover(isPresented: $showPrivacy) {
             if let url = Legal.privacyPolicy {
                 SafariView(url: url).ignoresSafeArea()
             }
