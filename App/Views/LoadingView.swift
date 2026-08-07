@@ -10,7 +10,7 @@ struct LoadingView: View {
             VStack(spacing: 30) {
                 Spacer()
 
-                Text("RAVELIN")
+                Text("RAVELANE")
                     .font(.system(size: 40, weight: .heavy, design: .monospaced))
                     .kerning(10)
                     .foregroundStyle(Theme.ink)

@@ -1,6 +1,6 @@
 import XCTest
 import Foundation
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class PurityTests: XCTestCase {
     static let floatingPointAllowlist: Set<String> = [
@@ -14,7 +14,7 @@ final class PurityTests: XCTestCase {
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("Sources/RavelinCore")
+            .appendingPathComponent("Sources/RavelaneCore")
     }
 
     private func swiftSources() throws -> [(relativePath: String, contents: String)] {
@@ -47,7 +47,7 @@ final class PurityTests: XCTestCase {
             for token in forbidden {
                 XCTAssertFalse(
                     contents.contains(token),
-                    "\(path) contains \(token). RavelinCore must build with the standard library alone."
+                    "\(path) contains \(token). RavelaneCore must build with the standard library alone."
                 )
             }
         }

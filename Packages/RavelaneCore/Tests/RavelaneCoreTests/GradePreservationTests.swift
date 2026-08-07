@@ -1,6 +1,6 @@
 import XCTest
 import Foundation
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class GradePreservationTests: XCTestCase {
     private let catalog = PieceCatalog.cache

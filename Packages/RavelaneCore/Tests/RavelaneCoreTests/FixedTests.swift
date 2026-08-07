@@ -1,5 +1,5 @@
 import XCTest
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class FixedTests: XCTestCase {
     func testIntegerConstruction() {

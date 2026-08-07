@@ -1,5 +1,5 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 struct BriefingView: View {
     let summary: LevelSummary

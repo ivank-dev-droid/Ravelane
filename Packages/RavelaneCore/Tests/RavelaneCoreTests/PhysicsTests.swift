@@ -1,5 +1,5 @@
 import XCTest
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class PhysicsTests: XCTestCase {
     private let catalog = PieceCatalog.cache

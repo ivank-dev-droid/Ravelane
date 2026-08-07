@@ -1,6 +1,6 @@
 import XCTest
 import Foundation
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class TrigTests: XCTestCase {
     private let tolerance = 1e-8

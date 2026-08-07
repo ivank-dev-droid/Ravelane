@@ -4,7 +4,7 @@ import UIKit
 
 enum Legal {
     static let privacyPolicy = URL(
-        string: "https://www.freeprivacypolicy.com/live/15e4cb6a-6846-4ed5-9b35-9e2602cba36c"
+        string: "https://www.freeprivacypolicy.com/live/c5c04cb9-4abe-432a-b9c3-cfa8c9b80c1d"
     )
 
     static var version: String {

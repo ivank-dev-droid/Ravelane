@@ -1,28 +1,28 @@
-name: Ravelin
+name: Ravelane
 options:
-  bundleIdPrefix: com.ravelin
+  bundleIdPrefix: com.ravelane
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
   groupSortPosition: top
 
 packages:
-  RavelinCore:
-    path: Packages/RavelinCore
+  RavelaneCore:
+    path: Packages/RavelaneCore
 
 targets:
-  Ravelin:
+  Ravelane:
     type: application
     platform: iOS
     sources:
       - path: App
     dependencies:
-      - package: RavelinCore
-        product: RavelinCore
+      - package: RavelaneCore
+        product: RavelaneCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.ravelin.game
-        PRODUCT_NAME: Ravelin
+        PRODUCT_BUNDLE_IDENTIFIER: com.ravelane.game
+        PRODUCT_NAME: Ravelane
         MARKETING_VERSION: "1.0"
         CURRENT_PROJECT_VERSION: "1"
         GENERATE_INFOPLIST_FILE: YES
@@ -33,7 +33,7 @@ targets:
         INFOPLIST_KEY_UIStatusBarHidden: YES
         INFOPLIST_KEY_UIRequiresFullScreen: YES
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
-        INFOPLIST_KEY_CFBundleDisplayName: Ravelin
+        INFOPLIST_KEY_CFBundleDisplayName: Ravelane
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.puzzle-games
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
@@ -41,9 +41,9 @@ targets:
         CODE_SIGN_STYLE: Automatic
 
 schemes:
-  Ravelin:
+  Ravelane:
     build:
       targets:
-        Ravelin: all
+        Ravelane: all
     run:
       config: Debug

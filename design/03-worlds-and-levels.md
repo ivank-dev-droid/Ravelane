@@ -61,7 +61,7 @@ Base speed starts at 45 m/s and the car has no lower gear. Track is at its narro
 grip at its lowest, and banking is not optional — an unbanked Sharp Curve is fatal at
 these speeds. Every deck here is a banking deck.
 
-The final level, **The Ravelin**, is a single continuous 4 km build through all five
+The final level, **The Ravelane**, is a single continuous 4 km build through all five
 previous worlds' rulesets in sequence, with the ruleset switching at gates.
 
 *Unlocks:* nothing new — Overdrive is the exam.

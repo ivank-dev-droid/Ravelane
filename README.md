@@ -1,4 +1,4 @@
-# Ravelin
+# Ravelane
 
 A 3D racer in which you never steer.
 
@@ -24,8 +24,8 @@ short and burn Runway, while the pieces that buy you *time to think* go nowhere.
 ## Where things are
 
 ```
-Packages/RavelinCore/   every rule of the game; pure Swift, no Apple imports, tested on Linux
-Tools/RavelinCLI/       solver, level generator, balance sweeps, SVG track renderer
+Packages/RavelaneCore/   every rule of the game; pure Swift, no Apple imports, tested on Linux
+Tools/RavelaneCLI/       solver, level generator, balance sweeps, SVG track renderer
 App/                    iOS — RealityKit and SwiftUI only, renders a snapshot, decides nothing
 design/                 the full design document, six parts
 ```
@@ -42,7 +42,7 @@ make sweep     # archetype balance sweep
 make gen       # generate the Xcode project (macOS)
 ```
 
-`swift run --package-path Tools/RavelinCLI RavelinCLI render --out out` writes orthographic
+`swift run --package-path Tools/RavelaneCLI RavelaneCLI render --out out` writes orthographic
 plan, elevation and section projections of a track as SVG, so geometry is reviewable without
 a renderer or a Mac.
 

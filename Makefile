@@ -1,4 +1,4 @@
-CORE := Packages/RavelinCore
+CORE := Packages/RavelaneCore
 SWIFTLY_BIN := $(HOME)/.local/share/swiftly/bin
 COMPAT_LIBS := $(HOME)/.local/share/swiftly/compat-libs
 
@@ -16,10 +16,10 @@ test:
 	swift test --package-path $(CORE)
 
 verify:
-	swift run --package-path Tools/RavelinCLI RavelinCLI verify --all
+	swift run --package-path Tools/RavelaneCLI RavelaneCLI verify --all
 
 sweep:
-	swift run --package-path Tools/RavelinCLI RavelinCLI sweep --all
+	swift run --package-path Tools/RavelaneCLI RavelaneCLI sweep --all
 
 gen:
 	xcodegen generate
@@ -30,4 +30,4 @@ doctor:
 	@ls $(COMPAT_LIBS) 2>/dev/null || echo "  (none — macOS does not need them)"
 
 clean:
-	rm -rf $(CORE)/.build Tools/RavelinCLI/.build
+	rm -rf $(CORE)/.build Tools/RavelaneCLI/.build

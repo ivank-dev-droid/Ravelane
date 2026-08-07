@@ -1,5 +1,5 @@
 import XCTest
-@testable import RavelinCore
+@testable import RavelaneCore
 
 final class DeterminismTests: XCTestCase {
     private func fingerprint(_ values: [Int64]) -> UInt64 {

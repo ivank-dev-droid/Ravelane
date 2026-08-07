@@ -1,7 +1,7 @@
 import Foundation
 import RealityKit
 import simd
-import RavelinCore
+import RavelaneCore
 
 enum RibbonMesh {
     static let edgeLift: Float = 0.35

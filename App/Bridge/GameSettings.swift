@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import RavelinCore
+import RavelaneCore
 
 enum Difficulty: String, CaseIterable, Identifiable {
     case relaxed
@@ -99,15 +99,15 @@ final class GameSettings {
     private let store = UserDefaults.standard
 
     private enum Keys {
-        static let sound = "ravelin.sound"
-        static let haptics = "ravelin.haptics"
-        static let speed = "ravelin.speed"
-        static let ghost = "ravelin.ghost"
-        static let camera = "ravelin.camera"
-        static let difficulty = "ravelin.difficulty"
-        static let car = "ravelin.car"
-        static let parts = "ravelin.parts"
-        static let tutorial = "ravelin.tutorial"
+        static let sound = "ravelane.sound"
+        static let haptics = "ravelane.haptics"
+        static let speed = "ravelane.speed"
+        static let ghost = "ravelane.ghost"
+        static let camera = "ravelane.camera"
+        static let difficulty = "ravelane.difficulty"
+        static let car = "ravelane.car"
+        static let parts = "ravelane.parts"
+        static let tutorial = "ravelane.tutorial"
     }
 
     static let speedChoices: [(label: String, value: Double)] = [

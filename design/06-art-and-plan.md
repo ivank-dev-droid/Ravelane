@@ -25,7 +25,7 @@ Surface = per-effect (boost blue, brake cold, rumble amber) · Structural = whit
 A player glancing back at their own track can read what they built.
 
 **The letter R.** The reference glyph is Revolut's registered mark and cannot be used.
-The Ravelin mark is an original letterform: an **R whose leg is a length of track ribbon**
+The Ravelane mark is an original letterform: an **R whose leg is a length of track ribbon**
 that peels away from the bowl — the logo is the game's verb. Same glass-and-neon
 treatment, same palette, different letterform.
 
@@ -47,7 +47,7 @@ treatment, same palette, different letterform.
 | **Total generated** | **123** | | |
 
 **Track geometry is never an authored asset.** All 40 pieces are described by numbers in
-`pieces.json` and turned into ribbon by `RavelinCore`. That is 40 models the project never
+`pieces.json` and turned into ribbon by `RavelaneCore`. That is 40 models the project never
 has to make, never has to keep in sync with the physics, and never has to re-export when a
 piece is retuned. It is the largest single saving in the plan.
 
@@ -73,7 +73,7 @@ cross-architecture determinism fixtures.
 
 ### M1 — Track engine *(Linux)*
 `Piece`, catalog loading, `TrackChain`, socket composition, ribbon sampling, spatial-hash
-clearance, self-intersection. Fixture levels. **`RavelinCLI render --svg` lands here** so
+clearance, self-intersection. Fixture levels. **`RavelaneCLI render --svg` lands here** so
 tracks become reviewable without a renderer.
 
 ### M2 — Simulation *(Linux)*
@@ -89,7 +89,7 @@ hazards, junctions.
 stored solution. Validator green.
 
 ### M5 — Balance *(Linux)*
-`RavelinCLI sweep` across archetypes × levels. Retune par counts, target times, piece
+`RavelaneCLI sweep` across archetypes × levels. Retune par counts, target times, piece
 costs and Material yields until each archetype has a path and the star curve matches
 intent.
 

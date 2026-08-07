@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import RavelinCore
+import RavelaneCore
 
 @MainActor
 @Observable

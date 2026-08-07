@@ -1,4 +1,4 @@
-# Ravelin
+# Ravelane
 
 A 3D racer where you never steer. The car drives itself, forward, always. You lay the
 track ahead of it, piece by piece, from a hand of parts, while it closes the distance.
@@ -7,7 +7,7 @@ Full design in [design/](design/) — read `01-core-loop.md` first.
 
 ## Golden rule of this codebase
 
-**Every rule of the game lives in `Packages/RavelinCore`, which has zero Apple imports and
+**Every rule of the game lives in `Packages/RavelaneCore`, which has zero Apple imports and
 builds and tests on Linux. The RealityKit layer in `App/` renders a snapshot and decides
 nothing.**
 
@@ -83,7 +83,7 @@ platform-dependent library call leaked into the simulation. Find it and remove i
 
 | Command | Effect |
 |---|---|
-| `make build` | build RavelinCore |
+| `make build` | build RavelaneCore |
 | `make test` | run the Linux test suite |
 | `make verify` | validate every level has a solver-verified solution |
 | `make sweep` | balance sweeps across archetypes |
@@ -111,7 +111,7 @@ The Linux CI container runs Swift 6.1 while this machine runs 6.3. Long chained
 `compactMap`/`filter`/`map`/`sorted` pipelines that compile fine locally can blow the 6.1
 type-checker's budget outright — `Archetype.deck` did. Write loops and explicitly typed
 closure parameters in the shared package. `docker run --rm -v $PWD:/w -w /w swift:6.1 swift
-build --package-path Packages/RavelinCore` reproduces it locally in seconds.
+build --package-path Packages/RavelaneCore` reproduces it locally in seconds.
 
 ## Code style
 
@@ -145,7 +145,7 @@ Milestones 0 through 4 complete, 145 tests green on Linux.
 - Play: `Session` ties chain, car, deck, hand and Material together. Deck presets,
   weighted draw, refill delay, discard cooldown, 18 parts, placement validation
 - Debug: `OrthoSVG` plan/elevation/section projections
-- `Tools/RavelinCLI`: `catalog`, `verify`, `render [--piece <id>]`
+- `Tools/RavelaneCLI`: `catalog`, `verify`, `render [--piece <id>]`
 
 - Level: 60 levels across 6 worlds, gates, cores, forbidden volumes, hazards, star scoring
 - Solver: `RouteWalker` lays a guaranteed-drivable route; `Solver` beam-searches a shorter
@@ -173,7 +173,7 @@ vertical and a brake. A deck without turns is not a strategy, it is a broken dec
 
 ### Where the balance actually stands
 
-`RavelinCLI sweep` re-solves all 60 levels per archetype and plays the result through the
+`RavelaneCLI sweep` re-solves all 60 levels per archetype and plays the result through the
 real physics. It is a lower bound: an automated router, not a person.
 
 | Archetype | Range across the six worlds |
@@ -195,7 +195,7 @@ pipeline is inverted: `RouteWalker` random-walks a route that is drivable by con
 that route**. `Solver` afterwards looks for a shorter line to set par. A level whose
 solution does not survive the real physics is not written out.
 
-Regenerate with `RavelinCLI solve`, which rewrites `Level/LevelSolutions.swift`.
+Regenerate with `RavelaneCLI solve`, which rewrites `Level/LevelSolutions.swift`.
 
 ## The estimator must not lie to itself
 

@@ -2,18 +2,18 @@
 import PackageDescription
 
 let package = Package(
-    name: "RavelinCore",
+    name: "RavelaneCore",
     products: [
-        .library(name: "RavelinCore", targets: ["RavelinCore"])
+        .library(name: "RavelaneCore", targets: ["RavelaneCore"])
     ],
     targets: [
         .target(
-            name: "RavelinCore",
+            name: "RavelaneCore",
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
         .testTarget(
-            name: "RavelinCoreTests",
-            dependencies: ["RavelinCore"],
+            name: "RavelaneCoreTests",
+            dependencies: ["RavelaneCore"],
             swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]

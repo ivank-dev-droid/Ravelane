@@ -1,5 +1,5 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 struct CodexView: View {
     @State private var section: Section = .pieces
@@ -197,7 +197,7 @@ enum CarCopy {
         case "cinder": return "Explosive acceleration, poor grip."
         case "loom": return "Slow and wide, which means more time to think."
         case "spindle": return "Banking specialist."
-        case "ravelin": return "An extra hand slot and half the draw delay."
+        case "ravelane": return "An extra hand slot and half the draw delay."
         default: return ""
         }
     }

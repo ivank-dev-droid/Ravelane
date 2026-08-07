@@ -15,9 +15,9 @@ jobs:
       - name: Architecture
         run: uname -m && swift --version
       - name: Test
-        run: swift test --package-path Packages/RavelinCore
+        run: swift test --package-path Packages/RavelaneCore
       - name: Catalog
-        run: swift run --package-path Tools/RavelinCLI RavelinCLI verify
+        run: swift run --package-path Tools/RavelaneCLI RavelaneCLI verify
 
   macos-arm64:
     runs-on: macos-latest
@@ -32,9 +32,9 @@ jobs:
             exit 1
           fi
       - name: Test
-        run: swift test --package-path Packages/RavelinCore
+        run: swift test --package-path Packages/RavelaneCore
       - name: Catalog
-        run: swift run --package-path Tools/RavelinCLI RavelinCLI verify
+        run: swift run --package-path Tools/RavelaneCLI RavelaneCLI verify
 
   ios-build:
     runs-on: macos-latest
@@ -49,13 +49,13 @@ jobs:
       - name: Build for the simulator
         run: |
           xcodebuild build \
-            -project Ravelin.xcodeproj \
-            -scheme Ravelin \
+            -project Ravelane.xcodeproj \
+            -scheme Ravelane \
             -destination 'generic/platform=iOS Simulator' \
             -skipPackagePluginValidation \
             CODE_SIGNING_ALLOWED=NO \
             | xcbeautify --quiet || xcodebuild build \
-            -project Ravelin.xcodeproj \
-            -scheme Ravelin \
+            -project Ravelane.xcodeproj \
+            -scheme Ravelane \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO

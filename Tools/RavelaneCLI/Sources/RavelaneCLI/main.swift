@@ -1,5 +1,5 @@
 import Foundation
-import RavelinCore
+import RavelaneCore
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 
@@ -194,7 +194,7 @@ case "render":
         renderPiece(pieceID, outputDirectory: output)
     }
 case "solve":
-    solveAll(outputPath: value(for: "--out", default: "Packages/RavelinCore/Sources/RavelinCore/Level/LevelSolutions.swift"))
+    solveAll(outputPath: value(for: "--out", default: "Packages/RavelaneCore/Sources/RavelaneCore/Level/LevelSolutions.swift"))
 case "levels":
     verifyLevels()
 case "sweep":
@@ -217,5 +217,5 @@ case "verify":
     }
     print(failures == 0 ? "OK \(PieceCatalog.all.count) pieces" : "\(failures) failures")
 default:
-    print("usage: RavelinCLI <catalog|render|verify> [--piece <id>] [--out <dir>]")
+    print("usage: RavelaneCLI <catalog|render|verify> [--piece <id>] [--out <dir>]")
 }

@@ -1,6 +1,6 @@
 import Foundation
 import Observation
-import RavelinCore
+import RavelaneCore
 
 @MainActor
 @Observable
@@ -13,9 +13,9 @@ final class ProgressStore {
 
     private let store = UserDefaults.standard
     private enum Keys {
-        static let stars = "ravelin.stars"
-        static let attempts = "ravelin.attempts"
-        static let bestPieces = "ravelin.bestPieces"
+        static let stars = "ravelane.stars"
+        static let attempts = "ravelane.attempts"
+        static let bestPieces = "ravelane.bestPieces"
     }
 
     private init() {
@@ -85,7 +85,7 @@ final class DeckStore {
 
     private(set) var custom: [String: [String: Int]]
     private let store = UserDefaults.standard
-    private let key = "ravelin.decks"
+    private let key = "ravelane.decks"
 
     private init() {
         custom = store.dictionary(forKey: key) as? [String: [String: Int]] ?? [:]

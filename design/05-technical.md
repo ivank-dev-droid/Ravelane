@@ -8,7 +8,7 @@ compiled against there.
 
 Therefore:
 
-> **Every rule of the game lives in `RavelinCore`, a pure Swift package with zero Apple
+> **Every rule of the game lives in `RavelaneCore`, a pure Swift package with zero Apple
 > imports, which builds and tests on Linux. The RealityKit layer renders a snapshot and
 > decides nothing.**
 
@@ -32,10 +32,10 @@ This particular one is close to the best case.
 ## 3. Repository layout
 
 ```
-Ravelin/
-  Packages/RavelinCore/            # pure Swift — Linux — no Apple imports
+Ravelane/
+  Packages/RavelaneCore/            # pure Swift — Linux — no Apple imports
     Package.swift
-    Sources/RavelinCore/
+    Sources/RavelaneCore/
       Math/       Vec3, Quat, Transform3, Spline, Integrator, Fixed
       Track/      Piece, PieceCatalog, TrackChain, Socket, Ribbon, Clearance
       Sim/        CarState, CarSpec, Physics, GripModel, Ballistics, Collision
@@ -47,8 +47,8 @@ Ravelin/
       Replay/     RunRecord, Ghost
       Save/       SaveFile, Migration
     Resources/    pieces.json cars.json parts.json levels/*.json
-    Tests/RavelinCoreTests/
-  Tools/RavelinCLI/                # Linux executable: solver, sweeps, level validation
+    Tests/RavelaneCoreTests/
+  Tools/RavelaneCLI/                # Linux executable: solver, sweeps, level validation
   App/                             # iOS — RealityKit + SwiftUI ONLY
     Render/   TrackMeshBuilder, RibbonLowLevelMesh, CarEntity, GhostEntity, CameraRig
     Views/    GameView, DeckBuilderView, LevelSelectView, SettingsView
@@ -120,14 +120,14 @@ and in `swift test`:
 
 Rule 2 is the important one. **A level that has no verified solution does not build.**
 
-## 8. RavelinCLI — the Linux workhorse
+## 8. RavelaneCLI — the Linux workhorse
 
 ```bash
-swift run RavelinCLI verify   --all                    # validate every level + solution
-swift run RavelinCLI solve    --level foundry_07 --budget 200000
-swift run RavelinCLI sweep    --world updraft --policy scalpel --runs 5000
-swift run RavelinCLI replay   --record run.json --assert-deterministic
-swift run RavelinCLI render   --level magnetite_03 --svg out.svg   # top/side ortho
+swift run RavelaneCLI verify   --all                    # validate every level + solution
+swift run RavelaneCLI solve    --level foundry_07 --budget 200000
+swift run RavelaneCLI sweep    --world updraft --policy scalpel --runs 5000
+swift run RavelaneCLI replay   --record run.json --assert-deterministic
+swift run RavelaneCLI render   --level magnetite_03 --svg out.svg   # top/side ortho
 ```
 
 - **solve** — a beam search over piece sequences, scored by distance-to-next-objective,

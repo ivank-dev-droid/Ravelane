@@ -78,7 +78,7 @@ public enum CarCatalog {
         CarSpec(id: CarID("spindle"), name: "Spindle",
                 mass: Fixed(8, over: 10), grip: Fixed(125, over: 100), acceleration: Fixed(1),
                 topSpeed: Fixed(1), downforce: Fixed(15, over: 100), widthTolerance: Fixed(8, over: 10)),
-        CarSpec(id: CarID("ravelin"), name: "Ravelin",
+        CarSpec(id: CarID("ravelane"), name: "Ravelane",
                 mass: Fixed(1), grip: Fixed(1), acceleration: Fixed(1),
                 topSpeed: Fixed(1), downforce: .zero, widthTolerance: Fixed(1))
     ]

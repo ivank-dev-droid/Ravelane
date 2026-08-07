@@ -3,7 +3,7 @@ import RealityKit
 import UIKit
 import SwiftUI
 import simd
-import RavelinCore
+import RavelaneCore
 
 @MainActor
 final class TrackScene {

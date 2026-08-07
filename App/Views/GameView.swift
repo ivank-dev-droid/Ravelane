@@ -1,7 +1,7 @@
 import SwiftUI
 import QuartzCore
 import RealityKit
-import RavelinCore
+import RavelaneCore
 
 struct GameView: View {
     @State private var model: SessionViewModel

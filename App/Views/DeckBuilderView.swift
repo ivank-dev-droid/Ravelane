@@ -1,5 +1,5 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 struct DeckBuilderView: View {
     let world: WorldID

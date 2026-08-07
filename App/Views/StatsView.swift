@@ -1,5 +1,5 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 struct StatsView: View {
     @State private var progress = ProgressStore.shared

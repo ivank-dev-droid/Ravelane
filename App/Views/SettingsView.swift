@@ -1,5 +1,5 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 struct SettingsView: View {
     @State private var settings = GameSettings.shared

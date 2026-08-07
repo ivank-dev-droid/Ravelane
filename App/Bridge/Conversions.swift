@@ -1,6 +1,6 @@
 import Foundation
 import simd
-import RavelinCore
+import RavelaneCore
 
 extension Fixed {
     var float: Float { Float(approximateDouble) }

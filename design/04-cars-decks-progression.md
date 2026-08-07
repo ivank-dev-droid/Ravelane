@@ -18,7 +18,7 @@ deck correct, and each is unlocked by a feat rather than bought.
 | **Cinder** | 1.0 | 0.90 | 1.6 | 1.15 | 0.0 | 1.0 | explosive accel, poor grip; Booster decks |
 | **Loom** | 1.2 | 1.00 | 0.8 | 0.8 | 0.0 | 1.4 | slow and wide; the Runway car — more time to think |
 | **Spindle** | 0.8 | 1.25 | 1.0 | 1.0 | 0.15 | 0.8 | banking specialist; bank bonus doubled |
-| **Ravelin** | 1.0 | 1.00 | 1.0 | 1.0 | 0.0 | 1.0 | endgame car: **+1 hand slot**, halved draw delay |
+| **Ravelane** | 1.0 | 1.00 | 1.0 | 1.0 | 0.0 | 1.0 | endgame car: **+1 hand slot**, halved draw delay |
 
 Unlock feats are behavioural, e.g. *Loom* — finish a level with runway never dropping
 below 6 s; *Kite* — land three Long Gaps in one level; *Anvil* — finish a level at zero

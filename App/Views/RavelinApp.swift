@@ -1,8 +1,8 @@
 import SwiftUI
-import RavelinCore
+import RavelaneCore
 
 @main
-struct RavelinApp: App {
+struct RavelaneApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -68,7 +68,7 @@ struct MainMenuView: View {
     private var header: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("RAVELIN")
+                Text("RAVELANE")
                     .font(.system(size: 30, weight: .heavy, design: .monospaced))
                     .kerning(8)
                     .foregroundStyle(Theme.ink)
