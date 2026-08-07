@@ -90,15 +90,26 @@ public struct Core: Sendable, Hashable, Codable {
     public var radius: Fixed
     public var value: Int
 
-    public init(position: Vec3, radius: Fixed = Fixed(5), value: Int = 18) {
+    public static let pickupRadius = Fixed(11)
+    public static let hoverHeight = Fixed(3)
+
+    public init(position: Vec3, radius: Fixed = Core.pickupRadius, value: Int = 18) {
         self.position = position
         self.radius = radius
         self.value = value
     }
 
     public func isCollected(from previous: Vec3, to current: Vec3) -> Bool {
-        let squared = SegmentDistance.closestSquared(previous, current, position, position)
-        return squared <= radius * radius
+        let flatPrevious = Vec3(previous.x, .zero, previous.z)
+        let flatCurrent = Vec3(current.x, .zero, current.z)
+        let flatCore = Vec3(position.x, .zero, position.z)
+        let sideways = SegmentDistance.closestSquared(flatPrevious, flatCurrent, flatCore, flatCore)
+        guard sideways <= radius * radius else { return false }
+
+        let lowest = Swift.min(previous.y, current.y)
+        let highest = Swift.max(previous.y, current.y)
+        let band = radius + Core.hoverHeight
+        return position.y >= lowest - band && position.y <= highest + band
     }
 }
 

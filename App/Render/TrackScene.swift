@@ -69,7 +69,7 @@ final class TrackScene {
             let taken = index < session.objectives.coresCollected.count
                 && session.objectives.coresCollected[index]
             let entity = ModelEntity(
-                mesh: .generateSphere(radius: 1.4),
+                mesh: .generateSphere(radius: 2.2),
                 materials: [Palette.coreMaterial(collected: taken)]
             )
             entity.position = core.position.simd
@@ -78,10 +78,10 @@ final class TrackScene {
 
             if !taken {
                 let spark = ModelEntity(
-                    mesh: .generateBox(size: SIMD3<Float>(0.5, 90, 0.5)),
+                    mesh: .generateBox(size: SIMD3<Float>(0.7, 120, 0.7)),
                     materials: [Palette.coreBeaconMaterial]
                 )
-                spark.position = core.position.simd + SIMD3<Float>(0, 44, 0)
+                spark.position = core.position.simd + SIMD3<Float>(0, 58, 0)
                 root.addChild(spark)
                 coreEntities.append(spark)
             }
@@ -94,7 +94,7 @@ final class TrackScene {
                 mesh: .generateBox(size: SIMD3<Float>(gate.radius.float * 2, 0.8, 0.8), cornerRadius: 0.4),
                 materials: [isGoal ? Palette.goalMaterial : Palette.gateMaterial]
             )
-            ring.position = gate.position.simd + SIMD3<Float>(0, gate.radius.float, 0)
+            ring.position = gate.position.simd + SIMD3<Float>(0, Float(Core.hoverHeight.approximateDouble) + 2, 0)
             root.addChild(ring)
             gateEntities.append(ring)
 

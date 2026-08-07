@@ -27,10 +27,9 @@ public enum LevelForge {
         return 1 + (index - 5) / 4
     }
 
-    public static func gateRadius(for index: Int) -> Fixed {
-        if index < 5 { return Fixed(44) }
-        if index < 9 { return Fixed(34) }
-        return Fixed(26)
+    public static func gateRadius(reach: Fixed) -> Fixed {
+        let proportional = reach / Fixed(4)
+        return Swift.min(Fixed(30), Swift.max(Fixed(14), proportional))
     }
 
     public static func basePar(for index: Int) -> Int {
@@ -170,16 +169,20 @@ public enum LevelForge {
             chain.sample(atArcLength: plinthEnd + (total - plinthEnd) * fraction)
         }
 
+        let origin = chain.sample(atArcLength: plinthEnd)?.position ?? .zero
         var checkpoints: [Gate] = []
+        var previousGate = origin
         for step in 1...(checkpointCount + 1) {
             let fraction = Fixed(step, over: checkpointCount + 1)
             guard let sample = point(at: fraction) else { continue }
+            let reach = (sample.position - previousGate).length
             checkpoints.append(Gate(position: sample.position, normal: sample.tangent,
-                                    radius: LevelForge.gateRadius(for: index)))
+                                    radius: LevelForge.gateRadius(reach: reach)))
+            previousGate = sample.position
         }
         let goal = checkpoints.isEmpty
             ? Gate(position: chain.headFrame.position, normal: chain.headFrame.forward,
-                   radius: LevelForge.gateRadius(for: index))
+                   radius: Fixed(20))
             : checkpoints.removeLast()
 
         var cores: [Core] = []
@@ -187,8 +190,7 @@ public enum LevelForge {
         for slot in 0..<coreCount {
             let fraction = Fixed(slot + 1, over: coreCount + 1)
             guard let sample = point(at: fraction) else { continue }
-            let lateral = Fixed(decorRng.nextInt(in: -3...3))
-            cores.append(Core(position: sample.position + sample.lateral * lateral))
+            cores.append(Core(position: sample.position + Vec3(.zero, Core.hoverHeight, .zero)))
         }
 
         var routeCapsules: [Capsule] = []

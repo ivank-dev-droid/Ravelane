@@ -171,4 +171,45 @@ final class LevelTests: XCTestCase {
         XCTAssertEqual(car.mode, .crashed)
         XCTAssertEqual(car.crashReason, .stalled)
     }
+
+    func testCoresSitOnTheRouteAtOneHeight() {
+        for summary in LevelCatalog.summaries.prefix(30) {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            var chain = TrackChain(catalog: PieceCatalog.cache)
+            chain.appendAll(level.plinth)
+            chain.appendAll(level.solution)
+
+            for core in level.cores {
+                var nearestFlat = Fixed(99999)
+                var liftAtNearest = Fixed.zero
+                var cursor = Fixed.zero
+                while cursor <= chain.totalLength {
+                    if let sample = chain.sample(atArcLength: cursor) {
+                        let flat = Vec3(core.position.x - sample.position.x, .zero,
+                                        core.position.z - sample.position.z).length
+                        if flat < nearestFlat {
+                            nearestFlat = flat
+                            liftAtNearest = core.position.y - sample.position.y
+                        }
+                    }
+                    cursor += Fixed(1)
+                }
+                XCTAssertLessThan(nearestFlat, Fixed(3),
+                                  "\(level.id): a core is not centred on the route")
+                XCTAssertEqual(liftAtNearest.approximateDouble,
+                               Core.hoverHeight.approximateDouble,
+                               accuracy: 0.6,
+                               "\(level.id): a core is not at the standard height above the track")
+            }
+        }
+    }
+
+    func testDrivingTheSolutionCollectsEveryCore() {
+        for summary in LevelCatalog.summaries.prefix(30) {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            let played = LevelRunner.play(level: level)
+            XCTAssertEqual(played.result.coresCollected, played.result.coreTotal,
+                           "\(level.id): driving its own route missed \(played.result.coreTotal - played.result.coresCollected) cores")
+        }
+    }
 }
