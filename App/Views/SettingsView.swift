@@ -3,6 +3,7 @@ import RavelinCore
 
 struct SettingsView: View {
     @State private var settings = GameSettings.shared
+    @State private var showPrivacy = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -59,6 +60,33 @@ struct SettingsView: View {
                         Stat(label: "Parts", value: "\(PartCatalog.all.count)")
                     }
 
+                    Panel(title: "Legal") {
+                        Button {
+                            Feedback.shared.play(.place)
+                            showPrivacy = true
+                        } label: {
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Privacy Policy")
+                                        .font(.system(size: 14, weight: .semibold))
+                                        .foregroundStyle(Theme.ink)
+                                    Text("This app collects no data")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(Theme.dim)
+                                }
+                                Spacer()
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(Theme.neon)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(Legal.privacyPolicy == nil)
+
+                        Stat(label: "Version", value: Legal.version)
+                    }
+
                     Button {
                         settings.tutorialSeen = false
                         Feedback.shared.play(.place)
@@ -78,6 +106,11 @@ struct SettingsView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .tint(Theme.neon)
+        .sheet(isPresented: $showPrivacy) {
+            if let url = Legal.privacyPolicy {
+                SafariView(url: url).ignoresSafeArea()
+            }
+        }
     }
 
     private func plainButton(_ title: String) -> some View {
