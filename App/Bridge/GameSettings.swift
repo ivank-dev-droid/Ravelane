@@ -19,7 +19,7 @@ enum Difficulty: String, CaseIterable, Identifiable {
 
     var detail: String {
         switch self {
-        case .relaxed: return "Extra grip, a wider car, a bigger purse and a sixth hand slot"
+        case .relaxed: return "Extra grip, a wider car, a bigger purse and pieces that arrive fast"
         case .standard: return "The tuned game"
         case .exact: return "No help at all, and Material is tight"
         }
@@ -49,18 +49,12 @@ enum Difficulty: String, CaseIterable, Identifiable {
         }
     }
 
-    var extraHandSlots: Int {
-        switch self {
-        case .relaxed: return 2
-        case .standard: return 1
-        case .exact: return 0
-        }
-    }
+    var extraHandSlots: Int { 0 }
 
     var drawDelayScale: Fixed {
         switch self {
-        case .relaxed: return Fixed(5, over: 10)
-        case .standard: return Fixed(7, over: 10)
+        case .relaxed: return Fixed(3, over: 10)
+        case .standard: return Fixed(5, over: 10)
         case .exact: return .one
         }
     }

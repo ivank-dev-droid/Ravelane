@@ -63,6 +63,9 @@ struct CodexView: View {
                 GroupHeader(title: pieceClass.rawValue, count: pieces.count)
                 ForEach(pieces) { piece in
                     Card {
+                        HStack(spacing: 12) {
+                        PieceShapeView(piece: piece, lineWidth: 2.2)
+                            .frame(width: 52, height: 44)
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text(piece.name)
@@ -79,6 +82,7 @@ struct CodexView: View {
                             Text(PieceCopy.role(for: piece))
                                 .font(.system(size: 10))
                                 .foregroundStyle(Theme.dim)
+                        }
                         }
                     }
                 }

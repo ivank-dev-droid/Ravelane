@@ -187,6 +187,11 @@ private struct DeckRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
+            PieceShapeView(piece: piece,
+                           tint: count > 0 ? Theme.cold : Theme.dim.opacity(0.7),
+                           lineWidth: 2.2)
+                .frame(width: 46, height: 38)
+
             VStack(alignment: .leading, spacing: 3) {
                 Text(piece.name)
                     .font(.system(size: 13, weight: .semibold))

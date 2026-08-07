@@ -137,29 +137,29 @@ private struct HandBar: View {
     @Binding var selectedSlot: Int?
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 9) {
-                ForEach(Array(model.hand.enumerated()), id: \.offset) { index, slot in
-                    PieceCard(
-                        slot: slot,
-                        piece: slot.piece.flatMap { PieceCatalog.cache.piece($0) },
-                        cost: slot.piece.map { model.session.cost(of: $0) } ?? 0,
-                        selected: selectedSlot == index,
-                        allowed: model.session.canPlace(slot: index) == nil
-                    )
-                    .onTapGesture {
-                        if selectedSlot == index {
-                            model.place(slot: index)
-                            selectedSlot = nil
-                        } else {
-                            selectedSlot = index
-                        }
+        HStack(spacing: 8) {
+            ForEach(Array(model.hand.enumerated()), id: \.offset) { index, slot in
+                PieceCard(
+                    slot: slot,
+                    piece: slot.piece.flatMap { PieceCatalog.cache.piece($0) },
+                    cost: slot.piece.map { model.session.cost(of: $0) } ?? 0,
+                    selected: selectedSlot == index,
+                    allowed: model.session.canPlace(slot: index) == nil
+                )
+                .frame(maxWidth: .infinity)
+                .contentShape(RoundedRectangle(cornerRadius: 14))
+                .onTapGesture {
+                    if selectedSlot == index {
+                        model.place(slot: index)
+                        selectedSlot = nil
+                    } else {
+                        selectedSlot = index
                     }
-                    .onLongPressGesture { model.discard(slot: index) }
                 }
+                .onLongPressGesture { model.discard(slot: index) }
             }
-            .padding(.horizontal, 16)
         }
+        .padding(.horizontal, 14)
     }
 }
 
@@ -171,38 +171,42 @@ private struct PieceCard: View {
     let allowed: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(piece?.name ?? "drawing")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(slot.isFilled ? Theme.ink : Theme.dim)
-                .lineLimit(2)
-                .multilineTextAlignment(.leading)
-            Spacer(minLength: 0)
+        VStack(spacing: 5) {
             if let piece {
-                Text(shortLine(piece))
-                    .font(.system(size: 8, design: .monospaced))
-                    .foregroundStyle(Theme.dim)
-                Text("\(cost)")
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundStyle(allowed ? Theme.gold : Theme.alarm)
+                PieceShapeView(piece: piece, tint: allowed ? Theme.cold : Theme.alarm)
+                    .frame(height: 46)
+            } else {
+                Image(systemName: "hourglass")
+                    .font(.system(size: 17))
+                    .foregroundStyle(Theme.dim.opacity(0.6))
+                    .frame(height: 46)
+            }
+
+            Text(piece?.name ?? "drawing")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(slot.isFilled ? Theme.ink : Theme.dim)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            if let piece {
+                HStack(spacing: 5) {
+                    Text("\(piece.length.whole)m")
+                        .foregroundStyle(Theme.dim)
+                    Text("\(cost)")
+                        .foregroundStyle(allowed ? Theme.gold : Theme.alarm)
+                }
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
             }
         }
-        .padding(9)
-        .frame(width: 104, height: 74, alignment: .leading)
-        .background(.black.opacity(selected ? 0.55 : 0.38),
-                    in: RoundedRectangle(cornerRadius: 12))
+        .padding(.vertical, 9)
+        .padding(.horizontal, 6)
+        .frame(height: 104)
+        .background(.black.opacity(selected ? 0.6 : 0.42),
+                    in: RoundedRectangle(cornerRadius: 14))
         .overlay {
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 14)
                 .strokeBorder(selected ? Theme.cold : Theme.hairline, lineWidth: selected ? 2 : 1)
         }
-    }
-
-    private func shortLine(_ piece: Piece) -> String {
-        let yaw = PieceCopy.degreesValue(piece.totalYaw)
-        let pitch = PieceCopy.degreesValue(piece.totalPitch)
-        if yaw != 0 { return "\(piece.length.whole)m \(yaw > 0 ? "right" : "left") \(abs(yaw))" }
-        if pitch != 0 { return "\(piece.length.whole)m \(pitch > 0 ? "up" : "down") \(abs(pitch))" }
-        return "\(piece.length.whole)m straight"
     }
 }
 

@@ -49,7 +49,7 @@ public enum MaterialReason: String, Sendable, Hashable, Codable {
 public struct Session: Sendable {
     public static let baseDrawDelay = Fixed(14, over: 10)
     public static let baseDiscardCooldown = Fixed(3)
-    public static let baseHandSize = 5
+    public static let baseHandSize = 3
     public static let startingMaterial = 120
     public static let cleanLandingBonus = 12
     public static let materialPerMetre = Fixed(1, over: 6)
