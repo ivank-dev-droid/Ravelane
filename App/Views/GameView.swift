@@ -314,6 +314,7 @@ private struct ResultsCard: View {
         case .brokeUp: return "BROKE UP"
         case .landedBadly: return "BAD LANDING"
         case .stalled: return "STALLED ON THE CLIMB"
+        case .boxedIn: return "NOWHERE LEFT TO BUILD"
         case nil: return "RAN OUT OF RUNWAY"
         }
     }

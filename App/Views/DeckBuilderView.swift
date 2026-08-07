@@ -10,6 +10,7 @@ struct DeckBuilderView: View {
     @Environment(\.dismiss) private var dismiss
 
     private var chosen: [PieceID] { palette.filter { (counts[$0] ?? 0) > 0 } }
+    private var core: Set<PieceID> { Set(Archetype.core(from: palette)) }
     private var totalPieces: Int { counts.values.reduce(0, +) }
     private var slotsUsed: Int { chosen.count }
     private var isValid: Bool { slotsUsed >= 4 && slotsUsed <= Deck.slotLimit }
@@ -32,15 +33,19 @@ struct DeckBuilderView: View {
 
     private func load() {
         let current = DeckStore.shared.deck(for: world, palette: palette)
+            .completed(against: palette)
         var table: [PieceID: Int] = [:]
         for entry in current.entries where palette.contains(entry.piece) {
             table[entry.piece] = entry.count
+        }
+        for id in Archetype.core(from: palette) where (table[id] ?? 0) < 1 {
+            table[id] = 2
         }
         counts = table
     }
 
     private func apply(_ archetype: Archetype) {
-        let deck = archetype.deck(from: palette)
+        let deck = archetype.deck(from: palette).completed(against: palette)
         var table: [PieceID: Int] = [:]
         for entry in deck.entries { table[entry.piece] = entry.count }
         counts = table
@@ -123,6 +128,7 @@ struct DeckBuilderView: View {
                         DeckRow(
                             piece: piece,
                             count: counts[id] ?? 0,
+                            required: core.contains(id),
                             canAdd: (counts[id] ?? 0) < Deck.countLimit
                                 && ((counts[id] ?? 0) > 0 || slotsUsed < Deck.slotLimit),
                             onAdd: {
@@ -130,9 +136,17 @@ struct DeckBuilderView: View {
                                 Feedback.shared.play(.place)
                             },
                             onRemove: {
+                                let floor = core.contains(id) ? 1 : 0
                                 let value = (counts[id] ?? 0) - 1
-                                if value <= 0 { counts[id] = nil } else { counts[id] = value }
-                                Feedback.shared.play(.discard)
+                                if value < floor {
+                                    Feedback.shared.play(.reject)
+                                } else if value <= 0 {
+                                    counts[id] = nil
+                                    Feedback.shared.play(.discard)
+                                } else {
+                                    counts[id] = value
+                                    Feedback.shared.play(.discard)
+                                }
                             }
                         )
                     }
@@ -150,10 +164,10 @@ struct DeckBuilderView: View {
                                    : "Too many kinds — twelve at most")
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(Theme.alarm)
-            } else if turnCount < 3 {
-                Text("A deck with almost no turns cannot navigate")
+            } else {
+                Text("Locked pieces are the set every level can be finished with")
                     .font(.system(size: 10, design: .monospaced))
-                    .foregroundStyle(Theme.gold)
+                    .foregroundStyle(Theme.dim)
             }
 
             Button {
@@ -181,6 +195,7 @@ struct DeckBuilderView: View {
 private struct DeckRow: View {
     let piece: Piece
     let count: Int
+    let required: Bool
     let canAdd: Bool
     let onAdd: () -> Void
     let onRemove: () -> Void
@@ -193,9 +208,16 @@ private struct DeckRow: View {
                 .frame(width: 46, height: 38)
 
             VStack(alignment: .leading, spacing: 3) {
-                Text(piece.name)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(count > 0 ? Theme.ink : Theme.dim)
+                HStack(spacing: 5) {
+                    Text(piece.name)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(count > 0 ? Theme.ink : Theme.dim)
+                    if required {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8))
+                            .foregroundStyle(Theme.gold.opacity(0.8))
+                    }
+                }
                 Text(PieceCopy.line(for: piece))
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundStyle(Theme.dim)

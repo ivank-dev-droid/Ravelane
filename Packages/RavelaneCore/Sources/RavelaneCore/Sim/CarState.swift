@@ -12,6 +12,7 @@ public enum CrashReason: String, Sendable, Hashable, Codable {
     case brokeUp
     case landedBadly
     case stalled
+    case boxedIn
 }
 
 public struct CarState: Sendable, Hashable, Codable {

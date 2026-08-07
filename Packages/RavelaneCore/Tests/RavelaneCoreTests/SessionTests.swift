@@ -228,4 +228,65 @@ final class SessionTests: XCTestCase {
             XCTAssertGreaterThan(s.chain.totalLength, Fixed(200), "\(preset.name) went nowhere")
         }
     }
+
+    func testEveryLevelDeckKeepsTheCorePieces() {
+        for summary in LevelCatalog.summaries {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            let stripped = Deck(entries: [DeckEntry(piece: PieceID("stub"), count: 3)])
+            let session = Session(deck: stripped, level: level)
+            let core = Archetype.core(from: level.allowedPieces)
+            for id in core {
+                XCTAssertTrue(session.deck.contains(id),
+                              "\(level.id): core piece \(id) was dropped from the deck")
+            }
+        }
+    }
+
+    func testHandAlwaysOffersSomethingPlayable() {
+        for summary in LevelCatalog.summaries.prefix(24) {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            var session = Session(deck: level.deck(), level: level)
+            var steps = 0
+            var starved = 0
+            while session.isRunning && steps < 3000 {
+                if session.isBoxedIn { starved += 1 }
+                if let slot = session.placeableSlots.first,
+                   session.clocks.runwaySeconds < Fixed(5) {
+                    session.place(slot: slot)
+                }
+                session.step()
+                steps += 1
+            }
+            XCTAssertLessThan(starved, 4,
+                              "\(level.id) boxed the player in with Material still in hand")
+        }
+    }
+
+    func testAUselessDeckIsRepairedIntoAPlayableOne() {
+        guard let level = LevelCatalog.level(LevelCatalog.summaries[0].id) else {
+            return XCTFail("no level")
+        }
+        let useless = Deck([("loop", 3)])
+        XCTAssertFalse(useless.missingCore(from: level.allowedPieces,
+                                           catalog: PieceCatalog.cache).isEmpty)
+
+        let session = Session(deck: useless, level: level)
+        XCTAssertTrue(useless.missingCore(from: level.allowedPieces, catalog: PieceCatalog.cache)
+            .allSatisfy { session.deck.contains($0) },
+            "a deck missing the core must be completed before play, not left unwinnable")
+        XCTAssertFalse(session.playablePieces.isEmpty,
+                       "there must always be something the player can place")
+    }
+
+    func testTheDeckCanAlwaysReachEveryLevelsGoal() {
+        for summary in LevelCatalog.summaries {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            let session = Session(deck: level.deck(), level: level)
+            let held = Set(session.deck.pieceTypes)
+            for id in level.solution {
+                XCTAssertTrue(held.contains(id),
+                              "\(level.id): the deck cannot supply \(id), which its own solution needs")
+            }
+        }
+    }
 }

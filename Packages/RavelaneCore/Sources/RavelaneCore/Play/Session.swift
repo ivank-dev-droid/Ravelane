@@ -37,6 +37,8 @@ public enum PlayEvent: Sendable, Hashable {
     case materialEarned(Int, reason: MaterialReason)
     case handEmpty
     case runwayCritical(seconds: Fixed)
+    case rescued(PieceID, slot: Int)
+    case deadlocked
 }
 
 public enum MaterialReason: String, Sendable, Hashable, Codable {
@@ -93,11 +95,12 @@ public struct Session: Sendable {
         extraHandSlots: Int = 0,
         drawDelayScale: Fixed = .one
     ) {
+        let completedDeck = level.map { deck.completed(against: $0.allowedPieces, catalog: catalog) } ?? deck
         var aggregated = PartCatalog.effects(parts)
         aggregated.extraHandSlots += extraHandSlots
         aggregated.drawDelayScale *= drawDelayScale
         self.catalog = catalog
-        self.deck = deck
+        self.deck = completedDeck
         self.world = level?.rules ?? world
         self.level = level
         self.effects = aggregated
@@ -204,10 +207,8 @@ public struct Session: Sendable {
         return deck.draw(using: &rng, preferringAbsent: inHand, sorter: effects.sorter)
     }
 
-    public func canPlace(slot: Int) -> PlacementRejection? {
+    public func canPlacePiece(_ id: PieceID) -> PlacementRejection? {
         guard car.isRunning else { return .runOver }
-        guard hand.indices.contains(slot) else { return .slotOutOfRange }
-        guard let id = hand[slot].piece else { return .slotEmpty }
         guard let piece = catalog.piece(id) else { return .unknownPiece }
 
         let price = cost(of: id)
@@ -229,6 +230,29 @@ public struct Session: Sendable {
             }
         }
         return nil
+    }
+
+    public var playablePieces: [PieceID] {
+        deck.pieceTypes.filter { canPlacePiece($0) == nil }
+    }
+
+    public var escapePieces: [PieceID] {
+        var seen = Set(deck.pieceTypes)
+        var candidates: [PieceID] = []
+        for id in level?.allowedPieces ?? [] where seen.insert(id).inserted {
+            candidates.append(id)
+        }
+        for piece in catalog.pieces where seen.insert(piece.id).inserted {
+            candidates.append(piece.id)
+        }
+        return candidates.filter { canPlacePiece($0) == nil }
+    }
+
+    public func canPlace(slot: Int) -> PlacementRejection? {
+        guard car.isRunning else { return .runOver }
+        guard hand.indices.contains(slot) else { return .slotOutOfRange }
+        guard let id = hand[slot].piece else { return .slotEmpty }
+        return canPlacePiece(id)
     }
 
     @discardableResult
@@ -346,6 +370,8 @@ public struct Session: Sendable {
             }
         }
 
+        rescueIfDeadlocked()
+
         let seconds = clocks.runwaySeconds
         if seconds < Session.runwayWarning && car.mode == .onTrack {
             log.append(.runwayCritical(seconds: seconds))
@@ -353,6 +379,47 @@ public struct Session: Sendable {
         if hand.allSatisfy({ $0.piece == nil }) {
             log.append(.handEmpty)
         }
+    }
+
+    public var cheapestDeckCost: Int {
+        deck.pieceTypes.map { cost(of: $0) }.min() ?? 0
+    }
+
+    public var isHandStuck: Bool {
+        car.mode == .onTrack
+            && hand.allSatisfy(\.isFilled)
+            && !hand.indices.contains { canPlace(slot: $0) == nil }
+    }
+
+    public var isBoxedIn: Bool {
+        isHandStuck && cheapestDeckCost <= material
+    }
+
+    private mutating func rescueIfDeadlocked() {
+        guard isHandStuck else { return }
+
+        var candidates = playablePieces
+        if candidates.isEmpty { candidates = escapePieces }
+
+        guard !candidates.isEmpty else {
+            guard cheapestDeckCost <= material else { return }
+            log.append(.deadlocked)
+            car.mode = .crashed
+            car.crashReason = .boxedIn
+            simEvents.append(.crashed(.boxedIn))
+            return
+        }
+
+        let climbing = candidates.filter { catalog.piece($0)?.totalPitch.raw ?? 0 > 0 }
+        let pool = climbing.isEmpty ? candidates : climbing
+        guard let rescue = pool.min(by: { cost(of: $0) < cost(of: $1) }) else { return }
+
+        let slot = hand.indices.max {
+            cost(of: hand[$0].piece ?? rescue) < cost(of: hand[$1].piece ?? rescue)
+        } ?? 0
+        hand[slot].piece = rescue
+        hand[slot].refillRemaining = .zero
+        log.append(.rescued(rescue, slot: slot))
     }
 
     private mutating func trackObjectives(from previous: Vec3, to current: Vec3) {

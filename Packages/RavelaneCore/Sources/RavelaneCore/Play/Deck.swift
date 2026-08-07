@@ -34,6 +34,28 @@ public struct Deck: Sendable, Hashable, Codable {
         case countOutOfRange(PieceID, Int)
         case duplicateEntry(PieceID)
         case unknownPiece(PieceID)
+        case missingCore([PieceID])
+    }
+
+    public func missingCore(from palette: [PieceID], catalog: PieceCatalogCache) -> [PieceID] {
+        let required = Archetype.core(from: palette, catalog: catalog)
+        let held = Set(pieceTypes)
+        return required.filter { !held.contains($0) }
+    }
+
+    public func completed(against palette: [PieceID], catalog: PieceCatalogCache = PieceCatalog.cache) -> Deck {
+        let missing = missingCore(from: palette, catalog: catalog)
+        guard !missing.isEmpty else { return self }
+
+        var kept = entries
+        for id in missing {
+            if kept.count >= Deck.slotLimit {
+                let index = kept.lastIndex { !Archetype.core(from: palette, catalog: catalog).contains($0.piece) }
+                if let index { kept.remove(at: index) } else { break }
+            }
+            kept.append(DeckEntry(piece: id, count: 2))
+        }
+        return Deck(entries: kept)
     }
 
     public func problems(against catalog: PieceCatalogCache) -> [Problem] {
@@ -52,6 +74,13 @@ public struct Deck: Sendable, Hashable, Codable {
                 found.append(.unknownPiece(entry.piece))
             }
         }
+        return found
+    }
+
+    public func problems(against catalog: PieceCatalogCache, palette: [PieceID]) -> [Problem] {
+        var found = problems(against: catalog)
+        let missing = missingCore(from: palette, catalog: catalog)
+        if !missing.isEmpty { found.append(.missingCore(missing)) }
         return found
     }
 
