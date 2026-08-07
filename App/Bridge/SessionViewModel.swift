@@ -36,7 +36,8 @@ final class SessionViewModel {
             seed: 0x5241_5645,
             level: eased,
             extraHandSlots: settings.difficulty.extraHandSlots,
-            drawDelayScale: settings.difficulty.drawDelayScale
+            drawDelayScale: settings.difficulty.drawDelayScale,
+            enforceSafePlacement: settings.difficulty != .exact
         )
     }
 
@@ -58,6 +59,45 @@ final class SessionViewModel {
     var carSpeed: Fixed { session.car.speed }
     var carPosition: Vec3 { session.carPosition }
     var placedCount: Int { session.placedCount }
+
+    struct Bearing: Sendable {
+        var distance: Double
+        var yaw: Double
+        var climb: Double
+        var isGoal: Bool
+    }
+
+    var nextObjective: Gate? {
+        let index = session.objectives.nextCheckpoint
+        let gates = level.objectiveOrder
+        guard index < gates.count else { return nil }
+        return gates[index]
+    }
+
+    var bearing: Bearing? {
+        guard let gate = nextObjective else { return nil }
+        let frame = carFrame
+        let delta = gate.position - frame.position
+        let distance = delta.length.approximateDouble
+        guard distance > 0.01 else { return nil }
+
+        let forward = frame.forward
+        let flatForward = Vec3(forward.x, .zero, forward.z).normalized
+        let flatDelta = Vec3(delta.x, .zero, delta.z)
+        let flatDistance = flatDelta.length
+        let unit = flatDistance.raw > 0 ? flatDelta / flatDistance : flatForward
+
+        let ahead = unit.dot(flatForward).approximateDouble
+        let side = unit.dot(Vec3(flatForward.z, .zero, -flatForward.x)).approximateDouble
+        let yaw = atan2(side, ahead)
+
+        return Bearing(
+            distance: distance,
+            yaw: yaw,
+            climb: delta.y.approximateDouble,
+            isGoal: session.objectives.nextCheckpoint >= level.checkpoints.count
+        )
+    }
 
     var carFrame: Transform3 {
         if session.car.mode == .airborne {
@@ -102,6 +142,15 @@ final class SessionViewModel {
 
     func previewSamples(for id: PieceID) -> [RibbonSample] {
         session.chain.projectedSamples(afterAppending: id) ?? []
+    }
+
+    func bringsCloser(_ id: PieceID) -> Bool? {
+        guard let gate = nextObjective else { return nil }
+        guard let samples = session.chain.projectedSamples(afterAppending: id),
+              let tail = samples.last else { return nil }
+        let now = (gate.position - session.chain.headFrame.position).length
+        let after = (gate.position - tail.frame.position).length
+        return after < now
     }
 
     func previewIsSafe(_ id: PieceID) -> Bool {

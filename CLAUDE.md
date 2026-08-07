@@ -70,7 +70,7 @@ x86-64 Linux and are asserted, not recomputed:
 | `testTransformChainMatchesGoldenFingerprint` | `17638089423717976749` |
 | `testCatalogGeometryMatchesGoldenFingerprint` | `13396143040586426581` |
 | `testFixedArithmeticGoldenVector` | `9673759134698064605` |
-| `testReplayMatchesGoldenFingerprint` | `14728847889759036489` |
+| `testReplayMatchesGoldenFingerprint` | `14965745262099277291` |
 
 If they pass on ARM64, replays, ghosts and stored level solutions are portable between
 the two machines, which is the entire reason the simulation uses `Fixed` and CORDIC rather

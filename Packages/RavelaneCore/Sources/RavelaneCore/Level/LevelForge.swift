@@ -27,6 +27,12 @@ public enum LevelForge {
         return 1 + (index - 5) / 4
     }
 
+    public static func gateRadius(for index: Int) -> Fixed {
+        if index < 5 { return Fixed(44) }
+        if index < 9 { return Fixed(34) }
+        return Fixed(26)
+    }
+
     public static func basePar(for index: Int) -> Int {
         routeLength(for: index) + 6 + index
     }
@@ -168,10 +174,12 @@ public enum LevelForge {
         for step in 1...(checkpointCount + 1) {
             let fraction = Fixed(step, over: checkpointCount + 1)
             guard let sample = point(at: fraction) else { continue }
-            checkpoints.append(Gate(position: sample.position, normal: sample.tangent, radius: Fixed(24)))
+            checkpoints.append(Gate(position: sample.position, normal: sample.tangent,
+                                    radius: LevelForge.gateRadius(for: index)))
         }
         let goal = checkpoints.isEmpty
-            ? Gate(position: chain.headFrame.position, normal: chain.headFrame.forward, radius: Fixed(24))
+            ? Gate(position: chain.headFrame.position, normal: chain.headFrame.forward,
+                   radius: LevelForge.gateRadius(for: index))
             : checkpoints.removeLast()
 
         var cores: [Core] = []

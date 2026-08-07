@@ -86,6 +86,30 @@ public struct Deck: Sendable, Hashable, Codable {
 
     public func draw(
         using rng: inout SplitMix64,
+        needingRoles roles: Set<PieceRole>,
+        catalog: PieceCatalogCache
+    ) -> PieceID? {
+        guard !roles.isEmpty else { return nil }
+        let matching = entries.filter { entry in
+            guard let piece = catalog.piece(entry.piece) else { return false }
+            return roles.contains(piece.role)
+        }
+        guard !matching.isEmpty else { return nil }
+
+        var total = 0
+        for entry in matching { total += entry.count }
+        guard total > 0 else { return matching.first?.piece }
+
+        var roll = Int(rng.next(upperBound: UInt64(total)))
+        for entry in matching {
+            roll -= entry.count
+            if roll < 0 { return entry.piece }
+        }
+        return matching.last?.piece
+    }
+
+    public func draw(
+        using rng: inout SplitMix64,
         preferringAbsent absent: Set<PieceID> = [],
         sorter: Bool = false
     ) -> PieceID? {

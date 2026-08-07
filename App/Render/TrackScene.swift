@@ -75,16 +75,36 @@ final class TrackScene {
             entity.position = core.position.simd
             root.addChild(entity)
             coreEntities.append(entity)
+
+            if !taken {
+                let spark = ModelEntity(
+                    mesh: .generateBox(size: SIMD3<Float>(0.5, 90, 0.5)),
+                    materials: [Palette.coreBeaconMaterial]
+                )
+                spark.position = core.position.simd + SIMD3<Float>(0, 44, 0)
+                root.addChild(spark)
+                coreEntities.append(spark)
+            }
         }
 
-        for gate in level.objectiveOrder {
-            let entity = ModelEntity(
-                mesh: .generateBox(size: SIMD3<Float>(gate.radius.float * 2, 0.6, 0.6), cornerRadius: 0.3),
-                materials: [Palette.gateMaterial]
+        let gates = level.objectiveOrder
+        for (index, gate) in gates.enumerated() {
+            let isGoal = index == gates.count - 1
+            let ring = ModelEntity(
+                mesh: .generateBox(size: SIMD3<Float>(gate.radius.float * 2, 0.8, 0.8), cornerRadius: 0.4),
+                materials: [isGoal ? Palette.goalMaterial : Palette.gateMaterial]
             )
-            entity.position = gate.position.simd + SIMD3<Float>(0, gate.radius.float, 0)
-            root.addChild(entity)
-            gateEntities.append(entity)
+            ring.position = gate.position.simd + SIMD3<Float>(0, gate.radius.float, 0)
+            root.addChild(ring)
+            gateEntities.append(ring)
+
+            let beacon = ModelEntity(
+                mesh: .generateBox(size: SIMD3<Float>(1.6, 400, 1.6)),
+                materials: [isGoal ? Palette.goalBeaconMaterial : Palette.beaconMaterial]
+            )
+            beacon.position = gate.position.simd + SIMD3<Float>(0, 150, 0)
+            root.addChild(beacon)
+            gateEntities.append(beacon)
         }
     }
 
@@ -174,6 +194,28 @@ enum Palette {
 
     static var gateMaterial: RealityKit.Material {
         UnlitMaterial(color: colour(blue, alpha: 0.85))
+    }
+
+    static var goalMaterial: RealityKit.Material {
+        UnlitMaterial(color: colour(gold))
+    }
+
+    static var beaconMaterial: RealityKit.Material {
+        var material = UnlitMaterial(color: colour(blue, alpha: 0.22))
+        material.blending = .transparent(opacity: 0.22)
+        return material
+    }
+
+    static var goalBeaconMaterial: RealityKit.Material {
+        var material = UnlitMaterial(color: colour(gold, alpha: 0.3))
+        material.blending = .transparent(opacity: 0.3)
+        return material
+    }
+
+    static var coreBeaconMaterial: RealityKit.Material {
+        var material = UnlitMaterial(color: colour(gold, alpha: 0.16))
+        material.blending = .transparent(opacity: 0.16)
+        return material
     }
 
     static func coreMaterial(collected: Bool) -> RealityKit.Material {

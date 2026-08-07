@@ -163,6 +163,20 @@ public struct Piece: Sendable, Hashable, Codable, Identifiable {
     }
 }
 
+public enum PieceRole: String, Sendable, Hashable, CaseIterable {
+    case left
+    case right
+    case neutral
+}
+
+extension Piece {
+    public var role: PieceRole {
+        if totalYaw.raw < 0 { return .left }
+        if totalYaw.raw > 0 { return .right }
+        return .neutral
+    }
+}
+
 public func degrees(_ value: Int) -> Fixed {
     Fixed(raw: (Trig.pi.raw / 180) * Int64(value))
 }

@@ -1,7 +1,7 @@
 public enum Physics {
     public static let timeStep = Fixed(1, over: 120)
     public static let baseAcceleration = Fixed(6)
-    public static let baseTopSpeed = Fixed(62)
+    public static let baseTopSpeed = Fixed(24)
     public static let corneringGrip = Fixed(6)
     public static let rollingResistance = Fixed(4, over: 10)
     public static let lateralRecovery = Fixed(4)

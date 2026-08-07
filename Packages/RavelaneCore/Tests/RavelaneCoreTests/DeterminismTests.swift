@@ -118,7 +118,7 @@ final class DeterminismTests: XCTestCase {
         XCTAssertEqual(replayFingerprint(), DeterminismTests.goldenReplayFingerprint)
     }
 
-    static let goldenReplayFingerprint: UInt64 = 14728847889759036489
+    static let goldenReplayFingerprint: UInt64 = 14965745262099277291
     static let goldenCatalogFingerprint: UInt64 = 13396143040586426581
     static let goldenChainFingerprint: UInt64 = 17638089423717976749
     static let goldenTableFingerprint: UInt64 = 11202701236706878950

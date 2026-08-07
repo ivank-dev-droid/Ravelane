@@ -13,7 +13,7 @@ final class SessionTests: XCTestCase {
     }
 
     private func greedyPolicy(_ s: inout Session) {
-        guard s.clocks.runwaySeconds < Fixed(6) else { return }
+        guard s.clocks.runwaySeconds < Fixed(9) else { return }
         if let slot = s.placeableSlots.first { s.place(slot: slot) }
     }
 
@@ -221,9 +221,12 @@ final class SessionTests: XCTestCase {
     }
 
     func testEveryPresetDeckCanSustainARun() {
+        guard let level = LevelCatalog.level(LevelID("foundry_05")) else {
+            return XCTFail("missing level")
+        }
         for preset in DeckPresets.all {
-            var s = Session(deck: preset.deck, seed: 5, material: 400)
-            _ = s.run(maxSteps: 5000, policy: greedyPolicy)
+            var s = Session(deck: preset.deck, seed: 5, level: level)
+            _ = s.run(maxSteps: 14000, policy: greedyPolicy)
             XCTAssertGreaterThan(s.placedCount, 5, "\(preset.name) built almost nothing")
             XCTAssertGreaterThan(s.chain.totalLength, Fixed(200), "\(preset.name) went nowhere")
         }
@@ -288,5 +291,73 @@ final class SessionTests: XCTestCase {
                               "\(level.id): the deck cannot supply \(id), which its own solution needs")
             }
         }
+    }
+
+    func testHandAlwaysOffersBothDirections() {
+        for summary in LevelCatalog.summaries.prefix(18) {
+            guard let level = LevelCatalog.level(summary.id) else { continue }
+            var session = Session(deck: level.deck(), level: level)
+            var oneSided = 0
+            var steps = 0
+            while session.isRunning && steps < 2500 {
+                if session.hand.allSatisfy(\.isFilled) {
+                    let roles = session.handRoles
+                    if !roles.contains(.left) || !roles.contains(.right) { oneSided += 1 }
+                }
+                if let slot = session.placeableSlots.first,
+                   session.clocks.runwaySeconds < Fixed(5) {
+                    session.place(slot: slot)
+                }
+                session.step()
+                steps += 1
+            }
+            XCTAssertLessThan(oneSided, 60,
+                              "\(level.id) left the player unable to turn one way")
+        }
+    }
+
+    func testTheOpeningLevelsAreReachableByAimingAlone() {
+        for id in ["foundry_01", "foundry_02"] {
+            guard let level = LevelCatalog.level(LevelID(id)) else {
+                return XCTFail("missing \(id)")
+            }
+            var session = Session(deck: level.deck(), level: level)
+            var steps = 0
+            while session.isRunning && steps < 12000 {
+                if session.clocks.runwaySeconds < Fixed(5) {
+                    let gates = level.objectiveOrder
+                    let target = gates[Swift.min(session.objectives.nextCheckpoint, gates.count - 1)]
+                    let best = session.placeableSlots.min { left, right in
+                        func score(_ slot: Int) -> Fixed {
+                            guard let pieceID = session.hand[slot].piece,
+                                  let samples = session.chain.projectedSamples(afterAppending: pieceID),
+                                  let tail = samples.last else { return Fixed(99999) }
+                            let toTarget = target.position - tail.frame.position
+                            let distance = toTarget.length
+                            let heading = distance.raw == 0
+                                ? Fixed.one
+                                : toTarget.normalized.dot(tail.frame.forward)
+                            return distance + (.one - heading) * Fixed(70)
+                        }
+                        return score(left) < score(right)
+                    }
+                    if let best { session.place(slot: best) }
+                }
+                session.step()
+                steps += 1
+            }
+            XCTAssertTrue(session.objectives.reachedGoal,
+                          "\(id) must be reachable by simply aiming at the goal")
+        }
+    }
+
+    func testTheCarNeverOutrunsTheBuilder() {
+        let topSpeed = CarCatalog.starting.absoluteTopSpeed.approximateDouble
+        let slots = Double(Session.baseHandSize)
+        let refill = Session.baseDrawDelay.approximateDouble
+        let averagePieceLength = 20.0
+        let buildRate = slots / refill * averagePieceLength
+        XCTAssertGreaterThan(buildRate, topSpeed * 1.4,
+            "the hand can lay \(Int(buildRate)) m/s of track while the car does \(Int(topSpeed)) m/s")
     }
 }

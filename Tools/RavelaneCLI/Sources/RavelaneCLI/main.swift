@@ -169,6 +169,64 @@ func sweep() {
           : "under target: \(worstPairs.joined(separator: ", "))")
 }
 
+func describeLevel(_ id: String) {
+    guard let level = LevelCatalog.level(LevelID(id)) else { print("no such level"); return }
+    print("\(level.id)  \(level.name)")
+    print("  plinth      \(level.plinth.map(\.rawValue).joined(separator: ", "))")
+    print("  solution    \(level.solution.count) pieces: \(level.solution.map(\.rawValue).joined(separator: ", "))")
+    print("  par         \(level.parPieces)   material \(level.startingMaterial)   startSpeed \(level.startSpeed)")
+    print("  checkpoints \(level.checkpoints.count)   cores \(level.cores.count)   blocks \(level.forbidden.count)")
+
+    var chain = TrackChain(catalog: PieceCatalog.cache)
+    chain.appendAll(level.plinth)
+    let start = chain.headFrame
+    let delta = level.goal.position - start.position
+    let flat = Vec3(delta.x, .zero, delta.z)
+    let heading = Trig.atan2(y: flat.x, x: flat.z)
+    let carHeading = Trig.atan2(y: start.forward.x, x: start.forward.z)
+    let turn = Trig.normalizedAngle(heading - carHeading)
+    print("  goal        \(level.goal.position)  radius \(level.goal.radius)")
+    print("  distance    \(delta.length) m   climb \(delta.y) m")
+    print("  turn needed \(Int(turn.approximateDouble * 180 / 3.14159265)) degrees from the plinth")
+    print("  deck        \(Archetype.core(from: level.allowedPieces).map(\.rawValue).joined(separator: ", "))")
+}
+
+func playAiming(_ count: Int) {
+    print("level        result      reason            placed  arc/total        material  runway")
+    for summary in LevelCatalog.summaries.prefix(count) {
+        guard let level = LevelCatalog.level(summary.id) else { continue }
+        var session = Session(deck: level.deck(), level: level)
+        var steps = 0
+        var starved = 0
+        while session.isRunning && steps < 12000 {
+            if session.clocks.runwaySeconds < Fixed(5) {
+                let gates = level.objectiveOrder
+                let target = gates[Swift.min(session.objectives.nextCheckpoint, gates.count - 1)]
+                let best = session.placeableSlots.min { left, right in
+                    func score(_ slot: Int) -> Fixed {
+                        guard let id = session.hand[slot].piece,
+                              let samples = session.chain.projectedSamples(afterAppending: id),
+                              let tail = samples.last else { return Fixed(99999) }
+                        let toTarget = target.position - tail.frame.position
+                        let distance = toTarget.length
+                        let heading = distance.raw == 0
+                            ? Fixed.one
+                            : toTarget.normalized.dot(tail.frame.forward)
+                        return distance + (.one - heading) * Fixed(70)
+                    }
+                    return score(left) < score(right)
+                }
+                if let best { session.place(slot: best) } else { starved += 1 }
+            }
+            session.step()
+            steps += 1
+        }
+        let done = session.objectives.reachedGoal ? "REACHED " : "failed  "
+        let reason = session.car.crashReason.map { "\($0)" } ?? "ran dry"
+        print("\(summary.id.rawValue.padding(toLength: 13, withPad: " ", startingAt: 0))\(done)    \(reason.padding(toLength: 18, withPad: " ", startingAt: 0))\(session.placedCount)      \(session.car.arcLength)/\(session.chain.totalLength)   \(session.material)     starved=\(starved)")
+    }
+}
+
 func verifyLevels() {
     var bad = 0
     for level in LevelCatalog.all {
@@ -197,6 +255,10 @@ case "solve":
     solveAll(outputPath: value(for: "--out", default: "Packages/RavelaneCore/Sources/RavelaneCore/Level/LevelSolutions.swift"))
 case "levels":
     verifyLevels()
+case "play":
+    playAiming(Int(value(for: "--count", default: "10")) ?? 10)
+case "describe":
+    describeLevel(value(for: "--level", default: "foundry_01"))
 case "sweep":
     sweep()
 case "verify":

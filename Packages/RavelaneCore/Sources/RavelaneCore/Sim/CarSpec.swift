@@ -96,7 +96,7 @@ public struct WorldRules: Sendable, Hashable, Codable {
     public var gripScale: Fixed
     public var startSpeed: Fixed
 
-    public init(name: String, gravity: Fixed, gripScale: Fixed = .one, startSpeed: Fixed = Fixed(12)) {
+    public init(name: String, gravity: Fixed, gripScale: Fixed = .one, startSpeed: Fixed = Fixed(9)) {
         self.name = name
         self.gravity = gravity
         self.gripScale = gripScale
@@ -107,5 +107,5 @@ public struct WorldRules: Sendable, Hashable, Codable {
     public static let updraft = WorldRules(name: "Updraft", gravity: Fixed(36, over: 10),
                                            gripScale: Fixed(27, over: 10))
     public static let overdrive = WorldRules(name: "Overdrive", gravity: Fixed(981, over: 100),
-                                             gripScale: Fixed(11, over: 10), startSpeed: Fixed(30))
+                                             gripScale: Fixed(11, over: 10), startSpeed: Fixed(15))
 }

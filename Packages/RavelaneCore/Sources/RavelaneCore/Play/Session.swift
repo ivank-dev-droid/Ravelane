@@ -19,6 +19,7 @@ public enum PlacementRejection: Sendable, Hashable {
     case notEnoughMaterial(needed: Int, have: Int)
     case wouldIntersect(pieceIndex: Int)
     case blockedByLevel
+    case wouldSlideOff
     case runOver
 }
 
@@ -65,6 +66,7 @@ public struct Session: Sendable {
     public let baseSpec: CarSpec
     public let spec: CarSpec
     public let level: Level?
+    public let enforceSafePlacement: Bool
 
     public private(set) var chain: TrackChain
     public private(set) var car: CarState
@@ -93,13 +95,15 @@ public struct Session: Sendable {
         material: Int = Session.startingMaterial,
         level: Level? = nil,
         extraHandSlots: Int = 0,
-        drawDelayScale: Fixed = .one
+        drawDelayScale: Fixed = .one,
+        enforceSafePlacement: Bool = true
     ) {
         let completedDeck = level.map { deck.completed(against: $0.allowedPieces, catalog: catalog) } ?? deck
         var aggregated = PartCatalog.effects(parts)
         aggregated.extraHandSlots += extraHandSlots
         aggregated.drawDelayScale *= drawDelayScale
         self.catalog = catalog
+        self.enforceSafePlacement = enforceSafePlacement
         self.deck = completedDeck
         self.world = level?.rules ?? world
         self.level = level
@@ -203,8 +207,23 @@ public struct Session: Sendable {
     }
 
     private mutating func drawPiece() -> PieceID? {
+        let held = hand.compactMap { $0.piece }.compactMap { catalog.piece($0)?.role }
+        let missing = Set(PieceRole.allCases).subtracting(held)
+        let steering = missing.intersection([.left, .right])
+        if !steering.isEmpty,
+           let turn = deck.draw(using: &rng, needingRoles: steering, catalog: catalog) {
+            return turn
+        }
+        if !missing.isEmpty,
+           let balanced = deck.draw(using: &rng, needingRoles: missing, catalog: catalog) {
+            return balanced
+        }
         let inHand = Set(hand.compactMap(\.piece))
         return deck.draw(using: &rng, preferringAbsent: inHand, sorter: effects.sorter)
+    }
+
+    public var handRoles: Set<PieceRole> {
+        Set(hand.compactMap { $0.piece }.compactMap { catalog.piece($0)?.role })
     }
 
     public func canPlacePiece(_ id: PieceID) -> PlacementRejection? {
@@ -229,6 +248,18 @@ public struct Session: Sendable {
                 return .wouldIntersect(pieceIndex: hit)
             }
         }
+
+        if enforceSafePlacement, car.mode == .onTrack {
+            let travel = SpeedEstimator.traverse(
+                samples: samples,
+                entrySpeed: car.speed,
+                spec: spec,
+                world: world,
+                surface: piece.surface
+            )
+            if travel.worstExcess > .zero || travel.stalled { return .wouldSlideOff }
+        }
+
         return nil
     }
 
@@ -410,11 +441,24 @@ public struct Session: Sendable {
             return
         }
 
-        let climbing = candidates.filter { catalog.piece($0)?.totalPitch.raw ?? 0 > 0 }
-        let pool = climbing.isEmpty ? candidates : climbing
+        let missing = Set(PieceRole.allCases).subtracting(handRoles)
+        let restoring = candidates.filter { missing.contains(catalog.piece($0)?.role ?? .neutral) }
+        var pool = restoring.isEmpty ? candidates : restoring
+        let climbing = pool.filter { catalog.piece($0)?.totalPitch.raw ?? 0 > 0 }
+        if !climbing.isEmpty && restoring.isEmpty { pool = climbing }
         guard let rescue = pool.min(by: { cost(of: $0) < cost(of: $1) }) else { return }
 
-        let slot = hand.indices.max {
+        let rescueRole = catalog.piece(rescue)?.role ?? .neutral
+        var roleTally: [PieceRole: Int] = [:]
+        for index in hand.indices {
+            guard let held = hand[index].piece, let piece = catalog.piece(held) else { continue }
+            roleTally[piece.role, default: 0] += 1
+        }
+        let duplicate = hand.indices.first { index in
+            guard let held = hand[index].piece, let piece = catalog.piece(held) else { return false }
+            return piece.role != rescueRole && (roleTally[piece.role] ?? 0) > 1
+        }
+        let slot = duplicate ?? hand.indices.max {
             cost(of: hand[$0].piece ?? rescue) < cost(of: hand[$1].piece ?? rescue)
         } ?? 0
         hand[slot].piece = rescue

@@ -28,6 +28,23 @@ struct GameView: View {
 
             VStack(spacing: 0) {
                 header
+                if let bearing = model.bearing, model.outcome == nil {
+                    HStack {
+                        CompassView(bearing: bearing)
+                        Spacer()
+                        if let slot = selectedSlot,
+                           let id = model.hand[safe: slot]?.piece,
+                           let piece = PieceCatalog.cache.piece(id) {
+                            GhostVerdict(
+                                piece: piece,
+                                endsCloser: model.bringsCloser(id),
+                                allowed: model.session.canPlace(slot: slot) == nil
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                }
                 Spacer()
                 if let outcome = model.outcome {
                     ResultsCard(

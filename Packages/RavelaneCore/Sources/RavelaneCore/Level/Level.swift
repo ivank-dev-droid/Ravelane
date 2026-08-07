@@ -18,11 +18,11 @@ public enum WorldID: String, Sendable, Hashable, Codable, CaseIterable {
         case .foundry: return .foundry
         case .updraft: return .updraft
         case .magnetite: return WorldRules(name: "Magnetite", gravity: Fixed(981, over: 100),
-                                           gripScale: Fixed(12, over: 10), startSpeed: Fixed(16))
+                                           gripScale: Fixed(12, over: 10), startSpeed: Fixed(10))
         case .haze: return WorldRules(name: "Haze", gravity: Fixed(981, over: 100),
-                                      gripScale: .one, startSpeed: Fixed(14))
+                                      gripScale: .one, startSpeed: Fixed(9))
         case .rundown: return WorldRules(name: "Rundown", gravity: Fixed(981, over: 100),
-                                         gripScale: Fixed(95, over: 100), startSpeed: Fixed(20))
+                                         gripScale: Fixed(95, over: 100), startSpeed: Fixed(12))
         case .overdrive: return .overdrive
         }
     }
