@@ -19,7 +19,16 @@ platform :ios do
 
     Dir.chdir("..") { sh("xcodegen", "generate") }
 
-    cert(api_key: key, development: false)
+    keychain = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
+    UI.message("keychain exists: #{File.exist?(keychain)}")
+
+    cert(
+      api_key: key,
+      development: false,
+      keychain_path: keychain,
+      keychain_password: "",
+      output_path: "certs"
+    )
 
     sigh(
       api_key: key,
