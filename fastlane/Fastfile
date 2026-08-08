@@ -50,6 +50,8 @@ platform :ios do
       clean: true,
       xcargs: [
         "CODE_SIGN_STYLE=Manual",
+        "CODE_SIGN_IDENTITY='Apple Distribution'",
+        "\"CODE_SIGN_IDENTITY[sdk=iphoneos*]=Apple Distribution\"",
         "CURRENT_PROJECT_VERSION=#{options[:build_number]}",
         "PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'",
         "DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}"
