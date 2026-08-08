@@ -1,8 +1,11 @@
+require "base64"
+
 default_platform(:ios)
 
 APP_IDENTIFIER = "com.ravelane.game"
 PROJECT = "Ravelane.xcodeproj"
 SCHEME = "Ravelane"
+KEYCHAIN = "fastlane_tmp_keychain"
 
 platform :ios do
   desc "Archive for the App Store, optionally uploading it"
@@ -19,22 +22,30 @@ platform :ios do
 
     Dir.chdir("..") { sh("xcodegen", "generate") }
 
-    keychain = File.expand_path("~/Library/Keychains/fastlane_tmp_keychain-db")
-    UI.message("keychain exists: #{File.exist?(keychain)}")
+    p12 = File.expand_path("dist.p12")
+    File.binwrite(p12, Base64.decode64(ENV.fetch("DIST_P12_BASE64")))
 
-    cert(
-      api_key: key,
-      development: false,
-      keychain_path: keychain,
-      keychain_password: "",
-      output_path: "certs"
-    )
+    begin
+      import_certificate(
+        certificate_path: p12,
+        certificate_password: ENV.fetch("DIST_P12_PASSWORD"),
+        keychain_name: KEYCHAIN,
+        keychain_password: ""
+      )
+    ensure
+      File.delete(p12) if File.exist?(p12)
+    end
+
+    identities = sh("security", "find-identity", "-v", "-p", "codesigning",
+                    File.expand_path("~/Library/Keychains/#{KEYCHAIN}-db"),
+                    log: false)
+    UI.message("identities in the keychain:\n#{identities}")
 
     sigh(
       api_key: key,
       app_identifier: APP_IDENTIFIER,
       platform: "ios",
-      force: false
+      force: true
     )
 
     profile_name = lane_context[SharedValues::SIGH_NAME]
