@@ -1,0 +1,73 @@
+default_platform(:ios)
+
+APP_IDENTIFIER = "com.ravelane.game"
+PROJECT = "Ravelane.xcodeproj"
+SCHEME = "Ravelane"
+
+platform :ios do
+  desc "Archive for the App Store, optionally uploading it"
+  lane :release do |options|
+    setup_ci
+
+    key = app_store_connect_api_key(
+      key_id: ENV.fetch("ASC_KEY_ID"),
+      issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+      key_content: ENV.fetch("ASC_KEY_P8"),
+      is_key_content_base64: true,
+      in_house: false
+    )
+
+    Dir.chdir("..") { sh("xcodegen", "generate") }
+
+    cert(api_key: key, development: false)
+
+    sigh(
+      api_key: key,
+      app_identifier: APP_IDENTIFIER,
+      platform: "ios",
+      force: false
+    )
+
+    profile_name = lane_context[SharedValues::SIGH_NAME]
+    UI.message("signing with profile: #{profile_name}")
+
+    build_app(
+      project: PROJECT,
+      scheme: SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "Ravelane.ipa",
+      clean: true,
+      xcargs: [
+        "CODE_SIGN_STYLE=Manual",
+        "CURRENT_PROJECT_VERSION=#{options[:build_number]}",
+        "PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'",
+        "DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}"
+      ].join(" "),
+      export_options: {
+        method: "app-store",
+        teamID: ENV.fetch("APPLE_TEAM_ID"),
+        signingStyle: "manual",
+        uploadSymbols: true,
+        provisioningProfiles: { APP_IDENTIFIER => profile_name }
+      }
+    )
+
+    if options[:upload].to_s == "true"
+      upload_to_app_store(
+        api_key: key,
+        app_identifier: APP_IDENTIFIER,
+        ipa: "build/Ravelane.ipa",
+        skip_metadata: true,
+        skip_screenshots: true,
+        skip_app_version_update: true,
+        precheck_include_in_app_purchases: false,
+        submit_for_review: false,
+        force: true
+      )
+    else
+      UI.success("archive and export finished, upload was not requested")
+    end
+  end
+end

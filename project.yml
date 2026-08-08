@@ -39,10 +39,6 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-      configs:
-        Release:
-          CODE_SIGN_IDENTITY: Apple Distribution
-          CODE_SIGN_IDENTITY[sdk=iphoneos*]: Apple Distribution
 
 schemes:
   Ravelane:
