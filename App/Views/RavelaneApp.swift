@@ -225,7 +225,7 @@ struct WorldBanner: View {
                 .clipped()
 
             LinearGradient(
-                colors: [.clear, Theme.background.opacity(0.85)],
+                colors: [Color.clear, Theme.void.opacity(0.85)],
                 startPoint: .top,
                 endPoint: .bottom
             )
@@ -261,9 +261,9 @@ struct KeyArtBackdrop: View {
                 .overlay {
                     LinearGradient(
                         colors: [
-                            Theme.background.opacity(0.62),
-                            Theme.background.opacity(0.86),
-                            Theme.background
+                            Theme.void.opacity(0.62),
+                            Theme.void.opacity(0.86),
+                            Theme.void
                         ],
                         startPoint: .top,
                         endPoint: .bottom
