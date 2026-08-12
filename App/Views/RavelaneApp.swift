@@ -103,21 +103,19 @@ struct MainMenuView: View {
     }
 
     private var worldStrip: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(WorldID.allCases, id: \.self) { id in
-                    Button {
-                        Feedback.shared.play(.place)
-                        withAnimation(.snappy(duration: 0.25)) { world = id }
-                    } label: {
-                        WorldChip(world: id, selected: id == world)
-                    }
-                    .buttonStyle(.plain)
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
+            ForEach(WorldID.allCases, id: \.self) { id in
+                Button {
+                    Feedback.shared.play(.place)
+                    withAnimation(.snappy(duration: 0.25)) { world = id }
+                } label: {
+                    WorldChip(world: id, selected: id == world)
                 }
+                .buttonStyle(.plain)
             }
-            .padding(.horizontal, 22)
         }
-        .padding(.bottom, 18)
+        .padding(.horizontal, 22)
+        .padding(.bottom, 16)
     }
 
     private var levelGrid: some View {
@@ -143,26 +141,22 @@ private struct WorldChip: View {
     let selected: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(world.displayName.uppercased())
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .kerning(1.5)
-                .foregroundStyle(selected ? Theme.void : Theme.ink)
-            Text(world.tagline)
-                .font(.system(size: 9, design: .monospaced))
-                .foregroundStyle(selected ? Theme.void.opacity(0.7) : Theme.dim)
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .frame(minHeight: 46)
-        .background(selected ? AnyShapeStyle(Theme.neon) : AnyShapeStyle(Theme.panel),
-                    in: RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(selected ? Color.clear : Theme.hairline, lineWidth: 1)
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 12))
+        Text(world.displayName.uppercased())
+            .font(.system(size: 11, weight: .bold, design: .monospaced))
+            .kerning(1)
+            .lineLimit(1)
+            .minimumScaleFactor(0.7)
+            .foregroundStyle(selected ? Theme.void : Theme.ink)
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 48)
+            .background(selected ? AnyShapeStyle(Theme.neon) : AnyShapeStyle(Theme.panel),
+                        in: RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(selected ? Color.clear : Theme.hairline, lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
