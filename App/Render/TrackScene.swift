@@ -30,6 +30,7 @@ final class TrackScene {
     private let carBody = ModelEntity()
     private let carWheels = ModelEntity()
     private let carCanopy = ModelEntity()
+    private let carModel = Entity()
     private let underglow = Billboard.entity(sprite: "GlowCold", tint: Palette.cold, size: 6, opacity: 0.5)
     private var fittedCar: String?
 
@@ -55,6 +56,7 @@ final class TrackScene {
         car.addChild(carBody)
         car.addChild(carWheels)
         car.addChild(carCanopy)
+        car.addChild(carModel)
         car.addChild(underglow)
         underglow.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
         underglow.position = SIMD3<Float>(0, -0.55, 0)
@@ -174,6 +176,16 @@ final class TrackScene {
         guard fittedCar != selected else { return }
         fittedCar = selected
         let spec = CarCatalog.spec(CarID(selected)) ?? CarCatalog.starting
+
+        carModel.children.removeAll()
+        let sculpted = CarModels.entity(for: spec, drop: -0.6)
+        if let sculpted { carModel.addChild(sculpted) }
+        let usesSculpt = sculpted != nil
+        carModel.isEnabled = usesSculpt
+        carBody.isEnabled = !usesSculpt
+        carWheels.isEnabled = !usesSculpt
+        carCanopy.isEnabled = !usesSculpt
+
         if let mesh = CarMesh.body(spec: spec) {
             carBody.model = ModelComponent(mesh: mesh, materials: [CarMesh.bodyMaterial(spec: spec)])
         }
