@@ -59,6 +59,7 @@ struct MainMenuView: View {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 worldStrip
+                    .zIndex(1)
                 WorldBanner(world: world)
                     .padding(.horizontal, 22)
                     .padding(.bottom, 16)
@@ -121,6 +122,8 @@ struct MainMenuView: View {
                             WorldChip(world: id, selected: id == world)
                         }
                         .buttonStyle(.plain)
+                        .frame(maxWidth: .infinity)
+                        .contentShape(RoundedRectangle(cornerRadius: 12))
                     }
                 }
             }
@@ -265,6 +268,7 @@ struct WorldBanner: View {
         .overlay {
             RoundedRectangle(cornerRadius: 18).strokeBorder(Theme.hairline, lineWidth: 1)
         }
+        .allowsHitTesting(false)
     }
 }
 
