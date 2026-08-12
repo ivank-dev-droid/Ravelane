@@ -29,7 +29,7 @@ enum RibbonMesh {
             positions.append(centre + lateral * half)
             normals.append(up)
             normals.append(up)
-            let v = cursor.float / 8
+            let v = cursor.float / 20
             uvs.append(SIMD2<Float>(0, v))
             uvs.append(SIMD2<Float>(1, v))
             rows += 1
@@ -53,6 +53,29 @@ enum RibbonMesh {
         descriptor.textureCoordinates = MeshBuffers.TextureCoordinates(uvs)
         descriptor.primitives = .triangles(indices)
 
+        return try? MeshResource.generate(from: [descriptor])
+    }
+
+    static func chevronMesh(halfWidth: Float = 5, length: Float = 4.5, thickness: Float = 1.1) -> MeshResource? {
+        var positions: [SIMD3<Float>] = []
+        var indices: [UInt32] = []
+
+        func wing(_ side: Float) {
+            let base = UInt32(positions.count)
+            positions.append(SIMD3<Float>(0, 0, length))
+            positions.append(SIMD3<Float>(0, 0, length - thickness))
+            positions.append(SIMD3<Float>(side * halfWidth, 0, 0))
+            positions.append(SIMD3<Float>(side * halfWidth, 0, -thickness))
+            indices.append(contentsOf: [base, base + 2, base + 1, base + 1, base + 2, base + 3])
+            indices.append(contentsOf: [base + 1, base + 2, base, base + 3, base + 2, base + 1])
+        }
+
+        wing(-1)
+        wing(1)
+
+        var descriptor = MeshDescriptor(name: "chevron")
+        descriptor.positions = MeshBuffers.Positions(positions)
+        descriptor.primitives = .triangles(indices)
         return try? MeshResource.generate(from: [descriptor])
     }
 

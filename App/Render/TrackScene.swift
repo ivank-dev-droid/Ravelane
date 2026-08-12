@@ -1,4 +1,5 @@
 import Foundation
+import QuartzCore
 import RealityKit
 import UIKit
 import SwiftUI
@@ -16,8 +17,18 @@ final class TrackScene {
     private var coreEntities: [ModelEntity] = []
     private var gateEntities: [ModelEntity] = []
     private var builtRevision = -1
+    private let sky = SkyBuilder.dome()
+    private let grid = SkyBuilder.grid()
+    private let pulse = ModelEntity()
 
     init() {
+        root.addChild(sky)
+        root.addChild(grid)
+        if let mesh = RibbonMesh.chevronMesh() {
+            pulse.model = ModelComponent(mesh: mesh, materials: [Surfaces.pulse])
+        }
+        pulse.isEnabled = false
+        root.addChild(pulse)
         root.addChild(ribbon)
         root.addChild(edges)
         root.addChild(car)
@@ -25,6 +36,8 @@ final class TrackScene {
         root.addChild(camera)
 
         camera.camera.fieldOfViewInDegrees = 62
+        camera.camera.near = 0.4
+        camera.camera.far = 4000
 
         car.model = ModelComponent(
             mesh: .generateBox(size: SIMD3<Float>(1.6, 0.8, 3.2), cornerRadius: 0.25),
@@ -36,11 +49,23 @@ final class TrackScene {
         )
         ghost.isEnabled = false
 
-        let light = DirectionalLight()
-        light.light.intensity = 2600
-        light.light.color = .white
-        light.orientation = simd_quatf(angle: -.pi / 3, axis: SIMD3<Float>(1, 0, 0))
-        root.addChild(light)
+        let key = DirectionalLight()
+        key.light.intensity = 3200
+        key.light.color = Palette.colour(SIMD3<Float>(1.0, 0.94, 0.86))
+        key.orientation = simd_quatf(angle: -.pi / 3, axis: SIMD3<Float>(1, 0, 0))
+        root.addChild(key)
+
+        let fill = DirectionalLight()
+        fill.light.intensity = 1100
+        fill.light.color = Palette.colour(Palette.blue)
+        fill.orientation = simd_quatf(angle: .pi / 2.6, axis: SIMD3<Float>(0.4, 1, 0))
+        root.addChild(fill)
+
+        let rim = DirectionalLight()
+        rim.light.intensity = 1600
+        rim.light.color = Palette.colour(Palette.neon)
+        rim.orientation = simd_quatf(angle: .pi * 0.85, axis: SIMD3<Float>(0.2, 1, 0.1))
+        root.addChild(rim)
     }
 
     func rebuildIfNeeded(model: SessionViewModel) {
@@ -52,7 +77,7 @@ final class TrackScene {
 
     private func rebuildTrack(chain: TrackChain) {
         if let mesh = RibbonMesh.generate(from: chain) {
-            ribbon.model = ModelComponent(mesh: mesh, materials: [Palette.ribbonMaterial])
+            ribbon.model = ModelComponent(mesh: mesh, materials: [Surfaces.ribbon])
         }
         if let mesh = RibbonMesh.edgeMesh(from: chain) {
             edges.model = ModelComponent(mesh: mesh, materials: [Palette.edgeMaterial])
@@ -124,6 +149,32 @@ final class TrackScene {
         camera.look(at: frame.position.simd + frame.forward.simd * 18,
                     from: eye,
                     relativeTo: nil)
+
+        updatePulse(model: model)
+
+        sky.position = eye
+        grid.position = SIMD3<Float>(
+            SkyBuilder.snap(frame.position.simd.x, to: SkyBuilder.gridSpacing),
+            frame.position.simd.y - SkyBuilder.gridDrop,
+            SkyBuilder.snap(frame.position.simd.z, to: SkyBuilder.gridSpacing)
+        )
+    }
+
+    private func updatePulse(model: SessionViewModel) {
+        guard model.isRunning else {
+            pulse.isEnabled = false
+            return
+        }
+        let travelled = model.session.car.distanceTravelled.approximateDouble
+        let phase = CACurrentMediaTime().truncatingRemainder(dividingBy: 2.4) / 2.4
+        let ahead = 16 + phase * 130
+        guard let sample = model.session.chain.sample(atArcLength: Fixed(approximating: travelled + ahead)) else {
+            pulse.isEnabled = false
+            return
+        }
+        pulse.isEnabled = true
+        pulse.position = sample.frame.position.simd + sample.normal.simd * 0.4
+        pulse.orientation = sample.frame.rotation.simd
     }
 
     func showGhost(samples: [RibbonSample], safe: Bool) {
