@@ -3,6 +3,7 @@ import RavelaneCore
 
 struct GarageView: View {
     @State private var settings = GameSettings.shared
+    @State private var bank = BankStore.shared
     @Environment(\.dismiss) private var dismiss
 
     private var fitted: Set<String> { Set(settings.selectedParts) }
@@ -22,6 +23,10 @@ struct GarageView: View {
                     Text("\(fitted.count)/\(PartCatalog.slotLimit) parts")
                         .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(Theme.dim)
+                    NavigationLink { ShopView() } label: {
+                        Wallet(credits: bank.credits)
+                    }
+                    .buttonStyle(.plain)
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
@@ -29,16 +34,20 @@ struct GarageView: View {
 
                 ScrollView {
                     VStack(spacing: 10) {
-                        GroupHeader(title: "Car", count: CarCatalog.all.count)
-                        ForEach(CarCatalog.all) { car in
+                        let garage = CarCatalog.all.filter { bank.owns(car: $0.id) }
+                        GroupHeader(title: "Car", count: garage.count)
+                        ForEach(garage) { car in
                             CarRow(car: car, selected: car.id.rawValue == settings.selectedCar) {
                                 settings.selectedCar = car.id.rawValue
                                 Feedback.shared.play(.place)
                             }
                         }
+                        if garage.count < CarCatalog.all.count {
+                            ShopHint(missing: CarCatalog.all.count - garage.count, noun: "cars")
+                        }
 
                         ForEach(PartGroup.allCases, id: \.self) { group in
-                            let parts = PartCatalog.all.filter { $0.group == group }
+                            let parts = PartCatalog.all.filter { $0.group == group && bank.owns(part: $0.id) }
                             if !parts.isEmpty {
                                 GroupHeader(title: group.rawValue, count: parts.count)
                                 ForEach(parts) { part in
@@ -147,6 +156,37 @@ private struct PartRow: View {
             .overlay {
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(fitted ? Theme.gold.opacity(0.45) : Theme.hairline, lineWidth: 1)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+
+private struct ShopHint: View {
+    let missing: Int
+    let noun: String
+
+    var body: some View {
+        NavigationLink { ShopView() } label: {
+            HStack(spacing: 10) {
+                Image(systemName: "cart")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Theme.gold)
+                Text("\(missing) more \(noun) waiting in the shop")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(Theme.dim)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Theme.dim)
+            }
+            .padding(14)
+            .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Theme.gold.opacity(0.25), lineWidth: 1)
             }
             .contentShape(RoundedRectangle(cornerRadius: 12))
         }

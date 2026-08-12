@@ -9,6 +9,7 @@ struct GameView: View {
     @State private var selectedSlot: Int?
     @State private var showPause = false
     @State private var recorded = false
+    @State private var earned = 0
     @Environment(\.dismiss) private var dismiss
 
     init(level: Level, deck: Deck? = nil) {
@@ -55,7 +56,8 @@ struct GameView: View {
                         level: model.level,
                         result: outcome,
                         trace: model.trace,
-                        onRetry: { model.restart(); recorded = false },
+                        earned: earned,
+                        onRetry: { model.restart(); recorded = false; earned = 0 },
                         onExit: { dismiss() }
                     )
                     .padding(.bottom, 20)
@@ -68,7 +70,7 @@ struct GameView: View {
             if showPause {
                 PauseOverlay(
                     onResume: { showPause = false; model.setPaused(false) },
-                    onRestart: { showPause = false; model.restart(); recorded = false },
+                    onRestart: { showPause = false; model.restart(); recorded = false; earned = 0 },
                     onExit: { dismiss() }
                 )
             }
@@ -88,7 +90,17 @@ struct GameView: View {
         .onChange(of: model.outcome != nil) { _, finished in
             guard finished, !recorded, let outcome = model.outcome else { return }
             recorded = true
+            let firstClear = ProgressStore.shared.stars(for: model.level.id) == 0
             ProgressStore.shared.record(result: outcome, for: model.level)
+            if let summary = LevelCatalog.summaries.first(where: { $0.id == model.level.id }) {
+                earned = Payout.credits(
+                    summary: summary,
+                    result: outcome,
+                    stars: ProgressStore.shared.stars(for: model.level.id),
+                    firstClear: firstClear
+                )
+                BankStore.shared.deposit(earned)
+            }
         }
         .task {
             model.advance(to: CACurrentMediaTime())
@@ -283,6 +295,7 @@ private struct ResultsCard: View {
     let level: Level
     let result: LevelResult
     let trace: [SessionViewModel.Trace]
+    let earned: Int
     let onRetry: () -> Void
     let onExit: () -> Void
 
@@ -306,6 +319,19 @@ private struct ResultsCard: View {
                       tint: result.piecesUsed <= level.parPieces ? Theme.cold : Theme.alarm)
                 Meter(label: "CORES", value: "\(result.coresCollected)/\(result.coreTotal)", tint: Theme.gold)
                 Meter(label: "TIME", value: result.elapsed.oneDecimal, tint: Theme.ink)
+            }
+
+            if earned > 0 {
+                HStack(spacing: 6) {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.system(size: 11))
+                    Text("+\(earned) credits")
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                }
+                .foregroundStyle(Theme.gold)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Theme.gold.opacity(0.12), in: Capsule())
             }
 
             if trace.count > 3 {

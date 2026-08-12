@@ -83,9 +83,15 @@ struct MainMenuView: View {
                     .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .kerning(3)
                     .foregroundStyle(Theme.dim)
+                NavigationLink { ShopView() } label: {
+                    Wallet(credits: BankStore.shared.credits)
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 4)
             }
             Spacer()
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
+                MenuChip(icon: "cart") { ShopView() }
                 MenuChip(icon: "book.closed") { CodexView() }
                 MenuChip(icon: "chart.bar") { StatsView() }
                 MenuChip(icon: "slider.horizontal.3") { SettingsView() }
@@ -171,12 +177,12 @@ struct MenuChip<Destination: View>: View {
             Image(systemName: icon)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(Theme.ink)
-                .frame(width: 42, height: 42)
-                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 13))
+                .frame(width: 38, height: 38)
+                .background(Theme.panel, in: RoundedRectangle(cornerRadius: 12))
                 .overlay {
-                    RoundedRectangle(cornerRadius: 13).strokeBorder(Theme.hairline, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12).strokeBorder(Theme.hairline, lineWidth: 1)
                 }
-                .contentShape(RoundedRectangle(cornerRadius: 13))
+                .contentShape(RoundedRectangle(cornerRadius: 12))
         }
     }
 }

@@ -135,13 +135,15 @@ final class GameSettings {
 
     var carSpec: CarSpec {
         let base = CarCatalog.spec(CarID(selectedCar)) ?? CarCatalog.starting
-        var tuned = base
+        var tuned = BankStore.shared.tuning(for: base.id).apply(to: base)
         tuned.grip *= difficulty.gripBonus
         tuned.widthTolerance *= difficulty.widthBonus
         return tuned
     }
 
-    var partIDs: [PartID] { selectedParts.map { PartID($0) } }
+    var partIDs: [PartID] {
+        selectedParts.map { PartID($0) }.filter { BankStore.shared.owns(part: $0) }
+    }
 
     func reset() {
         soundEnabled = true
