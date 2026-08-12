@@ -102,16 +102,27 @@ struct MainMenuView: View {
         .padding(.bottom, 20)
     }
 
+    private var worldRows: [[WorldID]] {
+        let all = WorldID.allCases
+        return stride(from: 0, to: all.count, by: 3).map { start in
+            Array(all[start..<min(start + 3, all.count)])
+        }
+    }
+
     private var worldStrip: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-            ForEach(WorldID.allCases, id: \.self) { id in
-                Button {
-                    Feedback.shared.play(.place)
-                    withAnimation(.snappy(duration: 0.25)) { world = id }
-                } label: {
-                    WorldChip(world: id, selected: id == world)
+        VStack(spacing: 8) {
+            ForEach(Array(worldRows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: 8) {
+                    ForEach(row, id: \.self) { id in
+                        Button {
+                            Feedback.shared.play(.place)
+                            withAnimation(.snappy(duration: 0.25)) { world = id }
+                        } label: {
+                            WorldChip(world: id, selected: id == world)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding(.horizontal, 22)
