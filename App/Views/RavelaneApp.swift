@@ -147,14 +147,16 @@ private struct WorldChip: View {
                 .foregroundStyle(selected ? Theme.void.opacity(0.7) : Theme.dim)
                 .lineLimit(1)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(minHeight: 46)
         .background(selected ? AnyShapeStyle(Theme.neon) : AnyShapeStyle(Theme.panel),
                     in: RoundedRectangle(cornerRadius: 12))
         .overlay {
             RoundedRectangle(cornerRadius: 12)
                 .strokeBorder(selected ? Color.clear : Theme.hairline, lineWidth: 1)
         }
+        .contentShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
@@ -174,6 +176,7 @@ struct MenuChip<Destination: View>: View {
                 .overlay {
                     RoundedRectangle(cornerRadius: 13).strokeBorder(Theme.hairline, lineWidth: 1)
                 }
+                .contentShape(RoundedRectangle(cornerRadius: 13))
         }
     }
 }
@@ -213,6 +216,7 @@ private struct LevelTile: View {
         .overlay {
             RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.hairline, lineWidth: 1)
         }
+        .contentShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

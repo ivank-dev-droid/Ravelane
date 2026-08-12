@@ -112,6 +112,7 @@ private struct CarRow: View {
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(selected ? Theme.cold.opacity(0.5) : Theme.hairline, lineWidth: 1)
             }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
@@ -147,6 +148,7 @@ private struct PartRow: View {
                 RoundedRectangle(cornerRadius: 12)
                     .strokeBorder(fitted ? Theme.gold.opacity(0.45) : Theme.hairline, lineWidth: 1)
             }
+            .contentShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }
