@@ -94,9 +94,16 @@ struct CodexView: View {
         ForEach(CarCatalog.all) { car in
             Card {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text(car.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
+                    HStack(alignment: .top) {
+                        Text(car.name)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+                        Spacer()
+                        Image("car_\(car.id.rawValue)")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 108, height: 76)
+                    }
                     HStack(spacing: 14) {
                         Bar(label: "GRIP", value: car.grip.approximateDouble / 1.4)
                         Bar(label: "ACCEL", value: car.acceleration.approximateDouble / 1.7)

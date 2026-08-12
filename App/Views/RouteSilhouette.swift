@@ -1,6 +1,40 @@
 import SwiftUI
 import RavelaneCore
 
+struct FittedCarCard: View {
+    private var spec: CarSpec {
+        CarCatalog.spec(CarID(GameSettings.shared.selectedCar)) ?? CarCatalog.starting
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("ON THE GRID")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .kerning(3)
+                    .foregroundStyle(Theme.dim)
+                Text(spec.name)
+                    .font(.system(size: 17, weight: .heavy))
+                    .foregroundStyle(Theme.ink)
+                Text(CarCopy.note(for: spec))
+                    .font(.system(size: 10))
+                    .foregroundStyle(Theme.dim)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 6)
+            Image("car_\(spec.id.rawValue)")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 128, height: 92)
+        }
+        .padding(16)
+        .background(Theme.panel, in: RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18).strokeBorder(Theme.hairline, lineWidth: 1)
+        }
+    }
+}
+
 struct ObjectiveMap: View {
     let level: Level
 
