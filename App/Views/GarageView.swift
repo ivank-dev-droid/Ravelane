@@ -97,7 +97,13 @@ private struct CarRow: View {
                         .foregroundStyle(Theme.dim)
                         .multilineTextAlignment(.leading)
                 }
-                Spacer()
+                Spacer(minLength: 4)
+                Image("car_\(car.id.rawValue)")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: 84, height: 62)
+                    .saturation(selected ? 1 : 0.55)
+                    .opacity(selected ? 1 : 0.72)
             }
             .padding(12)
             .background(selected ? Theme.panelStrong : Theme.panel,
@@ -120,8 +126,9 @@ private struct PartRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 12) {
-                Image(systemName: fitted ? "bolt.fill" : "bolt")
-                    .font(.system(size: 14))
+                Image(systemName: PartGlyph.symbol(for: part.id))
+                    .font(.system(size: 15))
+                    .frame(width: 22)
                     .foregroundStyle(fitted ? Theme.gold : Theme.dim)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(part.name)

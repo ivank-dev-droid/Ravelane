@@ -57,6 +57,7 @@ struct BriefingView: View {
 
             ScrollView {
                 VStack(spacing: 14) {
+                    ObjectiveMap(level: level)
                     LevelPlan(level: level)
                         .frame(height: 230)
                         .background(Theme.void, in: RoundedRectangle(cornerRadius: 16))

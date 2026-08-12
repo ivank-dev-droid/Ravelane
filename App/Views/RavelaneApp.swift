@@ -53,6 +53,7 @@ struct MainMenuView: View {
     var body: some View {
         ZStack {
             Theme.background.ignoresSafeArea()
+            KeyArtBackdrop()
             GlowField()
 
             VStack(alignment: .leading, spacing: 0) {
@@ -194,10 +195,43 @@ private struct LevelTile: View {
         .padding(12)
         .frame(height: 92)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(alignment: .trailing) {
+            RouteSilhouette(levelID: summary.id, lineWidth: 1.6, showsMarkers: false)
+                .frame(width: 84, height: 84)
+                .opacity(0.5)
+                .offset(x: 12)
+                .allowsHitTesting(false)
+        }
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay {
             RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.hairline, lineWidth: 1)
         }
+    }
+}
+
+struct KeyArtBackdrop: View {
+    var body: some View {
+        GeometryReader { proxy in
+            Image("MenuKeyArt")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .clipped()
+                .overlay {
+                    LinearGradient(
+                        colors: [
+                            Theme.background.opacity(0.62),
+                            Theme.background.opacity(0.86),
+                            Theme.background
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
     }
 }
 
