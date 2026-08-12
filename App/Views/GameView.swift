@@ -26,6 +26,10 @@ struct GameView: View {
             .ignoresSafeArea()
             .background(Theme.void)
 
+            SpeedVeil(speed: model.carSpeed.float, ceiling: 34)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
             VStack(spacing: 0) {
                 header
                 if let bearing = model.bearing, model.outcome == nil {

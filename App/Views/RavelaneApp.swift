@@ -59,6 +59,9 @@ struct MainMenuView: View {
             VStack(alignment: .leading, spacing: 0) {
                 header
                 worldStrip
+                WorldBanner(world: world)
+                    .padding(.horizontal, 22)
+                    .padding(.bottom, 16)
                 levelGrid
             }
         }
@@ -206,6 +209,43 @@ private struct LevelTile: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay {
             RoundedRectangle(cornerRadius: 16).strokeBorder(Theme.hairline, lineWidth: 1)
+        }
+    }
+}
+
+struct WorldBanner: View {
+    let world: WorldID
+
+    var body: some View {
+        ZStack(alignment: .bottomLeading) {
+            Image("world_\(world.rawValue)")
+                .resizable()
+                .aspectRatio(contentMode: .fill)
+                .frame(height: 108)
+                .clipped()
+
+            LinearGradient(
+                colors: [.clear, Theme.background.opacity(0.85)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(world.displayName.uppercased())
+                    .font(.system(size: 13, weight: .heavy, design: .monospaced))
+                    .kerning(3)
+                    .foregroundStyle(Theme.ink)
+                Text(world.tagline)
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(Theme.dim)
+            }
+            .padding(12)
+        }
+        .frame(height: 108)
+        .frame(maxWidth: .infinity)
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay {
+            RoundedRectangle(cornerRadius: 18).strokeBorder(Theme.hairline, lineWidth: 1)
         }
     }
 }

@@ -6,7 +6,7 @@ import UIKit
 final class Feedback {
     static let shared = Feedback()
 
-    enum Cue {
+    enum Cue: Hashable, CaseIterable {
         case place
         case discard
         case reject
@@ -15,35 +15,6 @@ final class Feedback {
         case land
         case crash
         case win
-
-        var frequency: Double {
-            switch self {
-            case .place: return 620
-            case .discard: return 330
-            case .reject: return 180
-            case .core: return 940
-            case .checkpoint: return 780
-            case .land: return 420
-            case .crash: return 110
-            case .win: return 1180
-            }
-        }
-
-        var duration: Double {
-            switch self {
-            case .crash, .win: return 0.34
-            case .reject: return 0.16
-            default: return 0.09
-            }
-        }
-
-        var level: Float {
-            switch self {
-            case .crash, .win: return 0.30
-            case .reject: return 0.16
-            default: return 0.19
-            }
-        }
     }
 
     private let engine = AVAudioEngine()
@@ -86,23 +57,19 @@ final class Feedback {
         }
     }
 
+    private var cache: [Cue: AVAudioPCMBuffer] = [:]
+
     private func buffer(for cue: Cue) -> AVAudioPCMBuffer? {
+        if let cached = cache[cue] { return cached }
         guard let format else { return nil }
-        let frames = AVAudioFrameCount(cue.duration * format.sampleRate)
+        let voice = VoiceBank.voice(for: cue)
+        let frames = AVAudioFrameCount(voice.duration * format.sampleRate)
         guard frames > 0,
               let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frames),
               let channel = buffer.floatChannelData?[0] else { return nil }
         buffer.frameLength = frames
-
-        let total = Double(frames)
-        for index in 0..<Int(frames) {
-            let progress = Double(index) / total
-            let envelope = pow(1 - progress, 2.2)
-            let sweep = cue.frequency * (1 + progress * 0.12)
-            let sample = sin(2 * .pi * sweep * Double(index) / format.sampleRate)
-            let harmonic = sin(4 * .pi * sweep * Double(index) / format.sampleRate) * 0.22
-            channel[index] = Float((sample + harmonic) * envelope) * cue.level
-        }
+        voice.render(sampleRate: format.sampleRate, into: channel, frames: Int(frames))
+        cache[cue] = buffer
         return buffer
     }
 
