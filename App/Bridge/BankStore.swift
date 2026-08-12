@@ -30,17 +30,19 @@ final class BankStore {
             store.set(BankStore.openingBalance, forKey: Keys.credits)
             store.set([CarCatalog.starting.id.rawValue], forKey: Keys.cars)
         }
-        credits = store.integer(forKey: Keys.credits)
-        ownedCars = Set(store.stringArray(forKey: Keys.cars) ?? [CarCatalog.starting.id.rawValue])
-        ownedParts = Set(store.stringArray(forKey: Keys.parts) ?? [])
-        ownedCars.insert(CarCatalog.starting.id.rawValue)
+        var garage = Set(store.stringArray(forKey: Keys.cars) ?? [])
+        garage.insert(CarCatalog.starting.id.rawValue)
 
+        var stored: [String: Tuning] = [:]
         if let raw = store.data(forKey: Keys.tuning),
            let decoded = try? JSONDecoder().decode([String: Tuning].self, from: raw) {
-            tuning = decoded
-        } else {
-            tuning = [:]
+            stored = decoded
         }
+
+        credits = store.integer(forKey: Keys.credits)
+        ownedCars = garage
+        ownedParts = Set(store.stringArray(forKey: Keys.parts) ?? [])
+        tuning = stored
     }
 
     func owns(car id: CarID) -> Bool { ownedCars.contains(id.rawValue) }
