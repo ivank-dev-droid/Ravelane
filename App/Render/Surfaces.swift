@@ -31,16 +31,23 @@ enum Surfaces {
 
     static var ribbon: RealityKit.Material {
         var material = PhysicallyBasedMaterial()
-        material.baseColor = .init(tint: Palette.colour(SIMD3<Float>(0.62, 0.60, 0.72)),
-                                   texture: tiled("RoadBase"))
-        material.roughness = 0.42
-        material.metallic = 0.25
+        let surface = tiled("RoadBase")
+        material.baseColor = .init(
+            tint: Palette.colour(surface == nil ? SIMD3<Float>(0.09, 0.06, 0.15)
+                                                : SIMD3<Float>(0.82, 0.80, 0.88)),
+            texture: surface
+        )
+        material.roughness = 0.46
+        material.metallic = 0.2
         if let normal = tiled("RoadNormal") {
             material.normal = .init(texture: normal)
         }
-        material.emissiveColor = .init(color: Palette.colour(SIMD3<Float>(1, 1, 1)),
-                                       texture: tiled("RoadEmissive"))
-        material.emissiveIntensity = 2.2
+        if let glow = tiled("RoadEmissive") {
+            material.emissiveColor = .init(color: Palette.colour(SIMD3<Float>(1, 1, 1)), texture: glow)
+            material.emissiveIntensity = 0.9
+        } else {
+            material.emissiveIntensity = 0
+        }
         return material
     }
 

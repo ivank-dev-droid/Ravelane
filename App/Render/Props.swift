@@ -43,7 +43,7 @@ enum Props {
         var positions: [SIMD3<Float>] = []
         var normals: [SIMD3<Float>] = []
         var indices: [UInt32] = []
-        let sides = 6
+        let sides = 8
 
         let top = SIMD3<Float>(0, radius, 0)
         let bottom = SIMD3<Float>(0, -radius, 0)
@@ -81,7 +81,7 @@ enum Props {
         material.metallic = 1.0
         material.roughness = 0.12
         material.emissiveColor = .init(color: Palette.colour(Palette.gold))
-        material.emissiveIntensity = 3.0
+        material.emissiveIntensity = 1.3
         return material
     }
 
@@ -100,7 +100,7 @@ enum Props {
         material.metallic = 0.85
         material.roughness = 0.2
         material.emissiveColor = .init(color: Palette.colour(tint))
-        material.emissiveIntensity = goal ? 3.4 : 2.2
+        material.emissiveIntensity = goal ? 1.7 : 1.1
         return material
     }
 }

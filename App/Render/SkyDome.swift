@@ -34,7 +34,7 @@ enum SkyBuilder {
                 let u = Float(segment) / Float(segments)
                 let phi = u * 2 * .pi
                 positions.append(SIMD3<Float>(radial * sin(phi), y, radial * cos(phi)) * domeRadius)
-                coordinates.append(SIMD2<Float>(u, v))
+                coordinates.append(SIMD2<Float>(u, 1 - v))
             }
         }
 

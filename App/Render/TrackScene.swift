@@ -29,6 +29,7 @@ final class TrackScene {
     private var lastTimestamp: Double?
     private let carBody = ModelEntity()
     private let carWheels = ModelEntity()
+    private let carCanopy = ModelEntity()
     private let underglow = Billboard.entity(sprite: "GlowCold", tint: Palette.cold, size: 6, opacity: 0.5)
     private var fittedCar: String?
 
@@ -53,6 +54,7 @@ final class TrackScene {
 
         car.addChild(carBody)
         car.addChild(carWheels)
+        car.addChild(carCanopy)
         car.addChild(underglow)
         underglow.orientation = simd_quatf(angle: -.pi / 2, axis: SIMD3<Float>(1, 0, 0))
         underglow.position = SIMD3<Float>(0, -0.55, 0)
@@ -127,11 +129,8 @@ final class TrackScene {
             root.addChild(halo)
             coreHalos.append(halo)
 
-            let beam = ModelEntity(
-                mesh: .generateBox(size: SIMD3<Float>(0.5, 110, 0.5)),
-                materials: [Palette.coreBeaconMaterial]
-            )
-            beam.position = core.position.simd + SIMD3<Float>(0, 53, 0)
+            let beam = Billboard.entity(sprite: "GlowGold", tint: Palette.gold, size: 3.4, opacity: 0.30)
+            beam.position = core.position.simd + SIMD3<Float>(0, 26, 0)
             beam.isEnabled = !taken
             root.addChild(beam)
             coreEntities.append(beam)
@@ -152,20 +151,21 @@ final class TrackScene {
 
             let flash = Billboard.entity(sprite: "RingFlash",
                                          tint: isGoal ? Palette.gold : Palette.cold,
-                                         size: radius * 2.6,
-                                         opacity: 0.4)
+                                         size: radius * 2.15,
+                                         opacity: 0.22)
             flash.position = ring.position
             root.addChild(flash)
             gateEntities.append(flash)
             gateFlashes.append(flash)
 
-            let beacon = ModelEntity(
-                mesh: .generateBox(size: SIMD3<Float>(1.2, 400, 1.2)),
-                materials: [isGoal ? Palette.goalBeaconMaterial : Palette.beaconMaterial]
-            )
-            beacon.position = gate.position.simd + SIMD3<Float>(0, 150, 0)
+            let beacon = Billboard.entity(sprite: isGoal ? "GlowGold" : "GlowCold",
+                                         tint: isGoal ? Palette.gold : Palette.cold,
+                                         size: radius * 1.1,
+                                         opacity: 0.22)
+            beacon.position = gate.position.simd + SIMD3<Float>(0, radius * 2.4, 0)
             root.addChild(beacon)
             gateEntities.append(beacon)
+            gateFlashes.append(beacon)
         }
     }
 
@@ -179,6 +179,9 @@ final class TrackScene {
         }
         if let mesh = CarMesh.wheels(spec: spec) {
             carWheels.model = ModelComponent(mesh: mesh, materials: [CarMesh.wheelMaterial])
+        }
+        if let mesh = CarMesh.canopy(spec: spec) {
+            carCanopy.model = ModelComponent(mesh: mesh, materials: [CarMesh.canopyMaterial])
         }
         underglow.model?.materials = [
             Billboard.material(sprite: "GlowCold", tint: CarMesh.tint(for: spec), opacity: 0.5)

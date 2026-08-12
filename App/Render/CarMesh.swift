@@ -42,20 +42,27 @@ struct Hull {
 
 @MainActor
 enum CarMesh {
-    private static let sides = 12
+    private static let profile: [SIMD2<Float>] = [
+        SIMD2<Float>(0.88, 0.00),
+        SIMD2<Float>(1.00, 0.16),
+        SIMD2<Float>(1.00, 0.58),
+        SIMD2<Float>(0.68, 0.94),
+        SIMD2<Float>(0.00, 1.00),
+        SIMD2<Float>(-0.68, 0.94),
+        SIMD2<Float>(-1.00, 0.58),
+        SIMD2<Float>(-1.00, 0.16),
+        SIMD2<Float>(-0.88, 0.00)
+    ]
+
+    private static var sides: Int { profile.count }
 
     private static func ring(_ section: Hull) -> [SIMD3<Float>] {
-        (0..<sides).map { index in
-            let angle = Float(index) / Float(sides) * 2 * .pi
-            let cosine = cos(angle)
-            let sine = sin(angle)
-            let x = section.halfWidth * sign(cosine) * pow(abs(cosine), 0.55)
-            let y = section.halfHeight * sign(sine) * pow(abs(sine), 0.55)
-            return SIMD3<Float>(x, y + section.lift, section.z)
+        profile.map { point in
+            SIMD3<Float>(point.x * section.halfWidth,
+                         section.lift + point.y * section.halfHeight,
+                         section.z)
         }
     }
-
-    private static func sign(_ value: Float) -> Float { value < 0 ? -1 : 1 }
 
     private static func loft(_ sections: [Hull], into builder: inout MeshBuilder) {
         guard sections.count >= 2 else { return }
@@ -129,11 +136,11 @@ enum CarMesh {
             let speed = Float(spec.topSpeed.approximateDouble)
             let tolerance = Float(spec.widthTolerance.approximateDouble)
             let push = Float(spec.downforce.approximateDouble)
-            length = 3.0 + speed * 0.9
-            width = 1.15 + tolerance * 0.5
-            height = 0.52 + mass * 0.16
-            wing = max(0, push) * 2.6
-            wheelRadius = 0.34 + mass * 0.06
+            length = 4.1 + speed * 1.2
+            width = 1.70 + tolerance * 0.55
+            height = 0.60 + mass * 0.17
+            wing = max(0, push) * 3.0
+            wheelRadius = 0.40 + mass * 0.07
         }
     }
 
@@ -143,54 +150,65 @@ enum CarMesh {
 
         let halfLength = shape.length / 2
         let halfWidth = shape.width / 2
+        let floor = -shape.height * 0.18
+
         let sections = [
-            Hull(z: -halfLength, halfWidth: halfWidth * 0.62, halfHeight: shape.height * 0.42, lift: 0.04),
-            Hull(z: -halfLength * 0.55, halfWidth: halfWidth * 0.98, halfHeight: shape.height * 0.55, lift: 0.02),
-            Hull(z: 0, halfWidth: halfWidth, halfHeight: shape.height * 0.5, lift: 0),
-            Hull(z: halfLength * 0.52, halfWidth: halfWidth * 0.82, halfHeight: shape.height * 0.38, lift: -0.04),
-            Hull(z: halfLength, halfWidth: halfWidth * 0.34, halfHeight: shape.height * 0.22, lift: -0.06)
+            Hull(z: -halfLength, halfWidth: halfWidth * 0.90, halfHeight: shape.height * 0.72, lift: floor),
+            Hull(z: -halfLength * 0.62, halfWidth: halfWidth, halfHeight: shape.height * 0.90, lift: floor),
+            Hull(z: -halfLength * 0.10, halfWidth: halfWidth, halfHeight: shape.height, lift: floor),
+            Hull(z: halfLength * 0.40, halfWidth: halfWidth * 0.94, halfHeight: shape.height * 0.66, lift: floor),
+            Hull(z: halfLength * 0.78, halfWidth: halfWidth * 0.78, halfHeight: shape.height * 0.42, lift: floor),
+            Hull(z: halfLength, halfWidth: halfWidth * 0.50, halfHeight: shape.height * 0.26, lift: floor)
         ]
         loft(sections, into: &builder)
 
-        let canopy = [
-            Hull(z: -halfLength * 0.34, halfWidth: halfWidth * 0.52, halfHeight: shape.height * 0.30, lift: shape.height * 0.52),
-            Hull(z: 0, halfWidth: halfWidth * 0.58, halfHeight: shape.height * 0.34, lift: shape.height * 0.54),
-            Hull(z: halfLength * 0.30, halfWidth: halfWidth * 0.40, halfHeight: shape.height * 0.22, lift: shape.height * 0.48)
-        ]
-        loft(canopy, into: &builder)
+        slab(centre: SIMD3<Float>(0, floor + 0.03, halfLength * 0.94),
+             size: SIMD3<Float>(shape.width * 1.02, 0.07, shape.length * 0.13),
+             into: &builder)
 
         if shape.wing > 0.05 {
-            slab(centre: SIMD3<Float>(0, shape.height * 0.92, -halfLength * 0.92),
-                 size: SIMD3<Float>(shape.width * 1.08, 0.09, shape.wing * 0.34),
+            slab(centre: SIMD3<Float>(0, floor + shape.height * 1.22, -halfLength * 0.94),
+                 size: SIMD3<Float>(shape.width * 1.05, 0.08, shape.wing * 0.32),
                  into: &builder)
             for side in [-1, 1] as [Float] {
-                slab(centre: SIMD3<Float>(side * shape.width * 0.44, shape.height * 0.66, -halfLength * 0.92),
-                     size: SIMD3<Float>(0.08, shape.height * 0.6, 0.26),
+                slab(centre: SIMD3<Float>(side * shape.width * 0.40, floor + shape.height * 0.95, -halfLength * 0.94),
+                     size: SIMD3<Float>(0.07, shape.height * 0.55, 0.22),
                      into: &builder)
             }
         }
 
-        for side in [-1, 1] as [Float] {
-            slab(centre: SIMD3<Float>(side * (halfWidth + 0.06), shape.height * 0.06, 0),
-                 size: SIMD3<Float>(0.10, 0.12, shape.length * 0.62),
-                 into: &builder)
-        }
-
         return builder.resource(name: "carBody")
+    }
+
+    static func canopy(spec: CarSpec) -> MeshResource? {
+        let shape = Shape(spec: spec)
+        var builder = MeshBuilder()
+        let halfLength = shape.length / 2
+        let halfWidth = shape.width / 2
+        let base = -shape.height * 0.18 + shape.height * 0.60
+
+        let sections = [
+            Hull(z: -halfLength * 0.34, halfWidth: halfWidth * 0.62, halfHeight: shape.height * 0.40, lift: base),
+            Hull(z: -halfLength * 0.05, halfWidth: halfWidth * 0.66, halfHeight: shape.height * 0.46, lift: base),
+            Hull(z: halfLength * 0.30, halfWidth: halfWidth * 0.46, halfHeight: shape.height * 0.26, lift: base)
+        ]
+        loft(sections, into: &builder)
+        return builder.resource(name: "carCanopy")
     }
 
     static func wheels(spec: CarSpec) -> MeshResource? {
         let shape = Shape(spec: spec)
         var builder = MeshBuilder()
         let halfLength = shape.length / 2
-        let offsetX = shape.width / 2 + 0.02
         let radius = shape.wheelRadius
-        let width = 0.26 + radius * 0.3
+        let width = 0.24 + radius * 0.26
+        let offsetX = shape.width / 2 - width * 0.28
+        let axle = -shape.height * 0.18 + radius * 0.62
         for side in [-1, 1] as [Float] {
-            wheel(centre: SIMD3<Float>(side * offsetX, -shape.height * 0.18, halfLength * 0.58),
-                  radius: radius * 0.92, width: width, into: &builder)
-            wheel(centre: SIMD3<Float>(side * offsetX, -shape.height * 0.18, -halfLength * 0.60),
-                  radius: radius, width: width * 1.15, into: &builder)
+            wheel(centre: SIMD3<Float>(side * offsetX, axle, halfLength * 0.62),
+                  radius: radius * 0.90, width: width, into: &builder)
+            wheel(centre: SIMD3<Float>(side * offsetX, axle, -halfLength * 0.64),
+                  radius: radius, width: width * 1.18, into: &builder)
         }
         return builder.resource(name: "carWheels")
     }
@@ -215,6 +233,18 @@ enum CarMesh {
         material.clearcoatRoughness = 0.1
         material.emissiveColor = .init(color: Palette.colour(tint(for: spec) * 0.35))
         material.emissiveIntensity = 0.5
+        return material
+    }
+
+    static var canopyMaterial: RealityKit.Material {
+        var material = PhysicallyBasedMaterial()
+        material.baseColor = .init(tint: Palette.colour(SIMD3<Float>(0.05, 0.07, 0.12)))
+        material.metallic = 0.6
+        material.roughness = 0.08
+        material.clearcoat = 1.0
+        material.clearcoatRoughness = 0.05
+        material.emissiveColor = .init(color: Palette.colour(Palette.cold * 0.5))
+        material.emissiveIntensity = 0.35
         return material
     }
 

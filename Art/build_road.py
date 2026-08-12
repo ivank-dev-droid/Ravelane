@@ -21,11 +21,14 @@ def vertically_seamless(image):
     return tile
 
 
-def base_colour():
+def base_colour(marks):
     source = Image.open(RAW / "road_tile.png").convert("RGB")
     source = source.resize((SIZE, SIZE), Image.LANCZOS)
     tile = vertically_seamless(source)
-    tile = Image.eval(tile, lambda v: int(v * 0.55))
+    tile = Image.eval(tile, lambda v: int(v * 0.30))
+    painted = Image.blend(tile, marks, 0.62)
+    mask = marks.convert("L").point(lambda v: min(255, v * 3))
+    tile = Image.composite(painted, tile, mask)
     tile.save(OUT / "RoadBase.png", optimize=True)
     return tile
 
@@ -84,10 +87,12 @@ def markings():
             )
 
     image = image.filter(ImageFilter.GaussianBlur(radius=1.2))
+    image = ImageOps.flip(image)
     image.save(OUT / "RoadEmissive.png", optimize=True)
+    return image
 
 
-tile = base_colour()
-markings()
+marks = markings()
+tile = base_colour(marks)
 normal_map(tile)
 print("road textures written to", OUT)

@@ -100,10 +100,13 @@ struct MainMenuView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(WorldID.allCases, id: \.self) { id in
-                    WorldChip(world: id, selected: id == world)
-                        .onTapGesture {
-                            withAnimation(.snappy(duration: 0.25)) { world = id }
-                        }
+                    Button {
+                        Feedback.shared.play(.place)
+                        withAnimation(.snappy(duration: 0.25)) { world = id }
+                    } label: {
+                        WorldChip(world: id, selected: id == world)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 22)
