@@ -7,6 +7,7 @@ struct RavelaneApp: App {
         WindowGroup {
             RootView()
                 .preferredColorScheme(.dark)
+                .statusBarHidden(true)
         }
     }
 }

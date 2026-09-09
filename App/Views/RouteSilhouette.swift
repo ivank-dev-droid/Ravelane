@@ -54,11 +54,41 @@ struct ObjectiveMap: View {
             RouteSilhouette(levelID: level.id, lineWidth: 3, showsMarkers: true, showsPath: false)
                 .frame(height: 168)
                 .frame(maxWidth: .infinity)
+
+            HStack(spacing: 14) {
+                LegendKey(tint: Theme.neon, label: "start", filled: true)
+                LegendKey(tint: Theme.cold, label: "gate", filled: false)
+                LegendKey(tint: Theme.gold, label: "core", filled: true)
+                Spacer()
+            }
         }
         .padding(16)
         .background(Theme.panel, in: RoundedRectangle(cornerRadius: 18))
         .overlay {
             RoundedRectangle(cornerRadius: 18).strokeBorder(Theme.hairline, lineWidth: 1)
+        }
+    }
+}
+
+private struct LegendKey: View {
+    let tint: Color
+    let label: String
+    let filled: Bool
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Group {
+                if filled {
+                    Circle().fill(tint)
+                } else {
+                    Circle().strokeBorder(tint, lineWidth: 1.5)
+                }
+            }
+            .frame(width: 7, height: 7)
+
+            Text(label)
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(Theme.dim)
         }
     }
 }
@@ -91,10 +121,22 @@ struct RouteSilhouette: View {
                     }
 
                     if showsMarkers {
+                        grid(span: span, inset: inset)
+                            .stroke(Theme.hairline, lineWidth: 0.6)
+                        markers(silhouette.cores, span: span, inset: inset, radius: lineWidth * 1.9)
+                            .fill(Theme.gold.opacity(0.16))
                         markers(silhouette.cores, span: span, inset: inset, radius: lineWidth * 0.9)
                             .fill(Theme.gold)
                         markers(silhouette.gates, span: span, inset: inset, radius: lineWidth * 1.5)
                             .stroke(Theme.cold, lineWidth: lineWidth * 0.7)
+                        markers(silhouette.gates, span: span, inset: inset, radius: lineWidth * 0.35)
+                            .fill(Theme.cold)
+                        endpoint(silhouette.path, atStart: true, span: span, inset: inset,
+                                 radius: lineWidth * 1.4)
+                            .fill(Theme.neon)
+                        endpoint(silhouette.path, atStart: false, span: span, inset: inset,
+                                 radius: lineWidth * 2.2)
+                            .stroke(Theme.neon.opacity(0.8), lineWidth: lineWidth * 0.6)
                     }
                 }
                 .frame(width: box, height: box)
@@ -120,6 +162,30 @@ struct RouteSilhouette: View {
             }
             index += 2
         }
+        return path
+    }
+
+    private func grid(span: CGFloat, inset: CGFloat) -> Path {
+        var path = Path()
+        let divisions = 4
+        for step in 0...divisions {
+            let offset: CGFloat = inset + span * CGFloat(step) / CGFloat(divisions)
+            path.move(to: CGPoint(x: inset, y: offset))
+            path.addLine(to: CGPoint(x: inset + span, y: offset))
+            path.move(to: CGPoint(x: offset, y: inset))
+            path.addLine(to: CGPoint(x: offset, y: inset + span))
+        }
+        return path
+    }
+
+    private func endpoint(_ values: [Int], atStart: Bool, span: CGFloat, inset: CGFloat,
+                          radius: CGFloat) -> Path {
+        guard values.count >= 4 else { return Path() }
+        let index: Int = atStart ? 0 : values.count - 2
+        let location: CGPoint = point(values, at: index, span: span, inset: inset)
+        var path = Path()
+        path.addEllipse(in: CGRect(x: location.x - radius, y: location.y - radius,
+                                   width: radius * 2, height: radius * 2))
         return path
     }
 

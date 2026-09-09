@@ -169,6 +169,7 @@ struct PrivacyPolicyView: View {
             }
         }
         .tint(Theme.neon)
+        .statusBarHidden(true)
     }
 
     private var header: some View {

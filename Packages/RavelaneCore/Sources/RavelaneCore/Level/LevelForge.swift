@@ -109,7 +109,6 @@ public enum LevelForge {
         let rules = world.rules
         let ids = palette(for: world)
         let plinth = [PieceID("long_run"), PieceID("stub")]
-        let checkpointCount = LevelForge.checkpointCount(for: index)
         let routeLength = LevelForge.routeLength(for: index)
         let walker = RouteWalker(palette: Archetype.core(from: ids), rules: rules)
 
