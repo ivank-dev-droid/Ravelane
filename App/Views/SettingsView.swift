@@ -70,19 +70,18 @@ struct SettingsView: View {
                                     Text("Privacy Policy")
                                         .font(.system(size: 14, weight: .semibold))
                                         .foregroundStyle(Theme.ink)
-                                    Text("This app collects no data")
+                                    Text("No data collected, no internet needed")
                                         .font(.system(size: 11))
                                         .foregroundStyle(Theme.dim)
                                 }
                                 Spacer()
-                                Image(systemName: "arrow.up.right.square")
+                                Image(systemName: "chevron.right")
                                     .font(.system(size: 15))
                                     .foregroundStyle(Theme.neon)
                             }
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .disabled(Legal.privacyPolicy == nil)
 
                         Stat(label: "Version", value: Legal.version)
                     }
@@ -107,9 +106,7 @@ struct SettingsView: View {
         .toolbar(.hidden, for: .navigationBar)
         .tint(Theme.neon)
         .fullScreenCover(isPresented: $showPrivacy) {
-            if let url = Legal.privacyPolicy {
-                SafariView(url: url).ignoresSafeArea()
-            }
+            PrivacyPolicyView { showPrivacy = false }
         }
     }
 

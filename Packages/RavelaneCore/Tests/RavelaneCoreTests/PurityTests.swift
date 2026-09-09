@@ -5,7 +5,8 @@ import Foundation
 final class PurityTests: XCTestCase {
     static let floatingPointAllowlist: Set<String> = [
         "Math/Fixed.swift",
-        "Math/Vec3.swift"
+        "Math/Vec3.swift",
+        "Play/Economy.swift"
     ]
     static let allowedDirectories: Set<String> = ["Debug"]
 

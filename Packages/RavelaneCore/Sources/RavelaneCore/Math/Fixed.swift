@@ -16,7 +16,16 @@ public struct Fixed: Sendable, Hashable, Comparable, Codable {
     }
 
     public init(approximating value: Double) {
-        raw = Int64((value * 4294967296.0).rounded())
+        let scaled = (value * 4294967296.0).rounded()
+        if scaled.isNaN {
+            raw = 0
+        } else if scaled >= 9223372036854775808.0 {
+            raw = Int64.max
+        } else if scaled <= -9223372036854775808.0 {
+            raw = Int64.min
+        } else {
+            raw = Int64(scaled)
+        }
     }
 
     public var approximateDouble: Double { Double(raw) / 4294967296.0 }

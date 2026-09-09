@@ -57,8 +57,9 @@ struct PieceShapeView: View {
             let spanX = Swift.max(0.001, maxX - minX)
             let spanY = Swift.max(0.001, maxY - minY)
             let inset: CGFloat = 7
-            let scale = Swift.min((size.width - inset * 2) / spanX,
-                                  (size.height - inset * 2) / spanY)
+            let usableWidth = Swift.max(0, size.width - inset * 2)
+            let usableHeight = Swift.max(0, size.height - inset * 2)
+            let scale = Swift.min(usableWidth / spanX, usableHeight / spanY)
 
             let offsetX = (size.width - spanX * scale) / 2
             let offsetY = (size.height - spanY * scale) / 2

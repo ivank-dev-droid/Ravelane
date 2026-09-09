@@ -218,7 +218,9 @@ struct LevelPlan: View {
             let minY = points.map(\.y).min()!, maxY = points.map(\.y).max()!
             let spanX = max(1, maxX - minX), spanY = max(1, maxY - minY)
             let inset: CGFloat = 26
-            let scale = min((size.width - inset * 2) / spanX, (size.height - inset * 2) / spanY)
+            let usableWidth = max(0, size.width - inset * 2)
+            let usableHeight = max(0, size.height - inset * 2)
+            let scale = min(usableWidth / spanX, usableHeight / spanY)
 
             func project(_ p: CGPoint) -> CGPoint {
                 CGPoint(x: inset + (p.x - minX) * scale,

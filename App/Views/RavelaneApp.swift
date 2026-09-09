@@ -35,12 +35,9 @@ struct RootView: View {
         .animation(.easeInOut(duration: 0.45), value: ready)
         .animation(.easeInOut(duration: 0.35), value: showTutorial)
         .task {
-            async let warm: [LevelSummary] = Task.detached(priority: .userInitiated) {
+            summaries = await Task.detached(priority: .userInitiated) {
                 LevelCatalog.summaries
             }.value
-            async let floor: Void = Task.sleep(for: .milliseconds(2500))
-            summaries = (try? await warm) ?? []
-            _ = try? await floor
             ready = true
         }
     }

@@ -11,6 +11,7 @@ struct GameView: View {
     @State private var recorded = false
     @State private var earned = 0
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.scenePhase) private var scenePhase
 
     init(level: Level, deck: Deck? = nil) {
         _model = State(initialValue: SessionViewModel(level: level, deck: deck))
@@ -102,12 +103,18 @@ struct GameView: View {
                 BankStore.shared.deposit(earned)
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            guard phase != .active, model.isRunning, !showPause else { return }
+            showPause = true
+            model.setPaused(true)
+        }
         .task {
             model.advance(to: CACurrentMediaTime())
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(8))
+                let live = model.isRunning && !model.isPaused
+                try? await Task.sleep(for: .milliseconds(live ? 8 : 100))
                 model.advance(to: CACurrentMediaTime())
-                scene.update(model: model)
+                if live { scene.update(model: model) }
             }
         }
     }
