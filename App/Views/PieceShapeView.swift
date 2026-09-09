@@ -48,21 +48,23 @@ struct PieceShapeView: View {
     }
 
     var body: some View {
-        Canvas { context, size in
+        Canvas { (context: inout GraphicsContext, size: CGSize) in
             let raw = points
             guard raw.count > 1 else { return }
 
-            let minX = raw.map(\.x).min()!, maxX = raw.map(\.x).max()!
-            let minY = raw.map(\.y).min()!, maxY = raw.map(\.y).max()!
-            let spanX = Swift.max(0.001, maxX - minX)
-            let spanY = Swift.max(0.001, maxY - minY)
+            let xs: [CGFloat] = raw.map(\.x)
+            let ys: [CGFloat] = raw.map(\.y)
+            let minX: CGFloat = xs.min()!, maxX: CGFloat = xs.max()!
+            let minY: CGFloat = ys.min()!, maxY: CGFloat = ys.max()!
+            let spanX: CGFloat = Swift.max(0.001, maxX - minX)
+            let spanY: CGFloat = Swift.max(0.001, maxY - minY)
             let inset: CGFloat = 7
-            let usableWidth = Swift.max(0, size.width - inset * 2)
-            let usableHeight = Swift.max(0, size.height - inset * 2)
-            let scale = Swift.min(usableWidth / spanX, usableHeight / spanY)
+            let usableWidth: CGFloat = Swift.max(0, size.width - inset * 2)
+            let usableHeight: CGFloat = Swift.max(0, size.height - inset * 2)
+            let scale: CGFloat = Swift.min(usableWidth / spanX, usableHeight / spanY)
 
-            let offsetX = (size.width - spanX * scale) / 2
-            let offsetY = (size.height - spanY * scale) / 2
+            let offsetX: CGFloat = (size.width - spanX * scale) / 2
+            let offsetY: CGFloat = (size.height - spanY * scale) / 2
 
             func place(_ p: CGPoint) -> CGPoint {
                 CGPoint(x: offsetX + (p.x - minX) * scale,
@@ -97,9 +99,9 @@ struct PieceShapeView: View {
             if raw.count >= 2 {
                 let tip = place(raw[raw.count - 1])
                 let before = place(raw[raw.count - 2])
-                let dx = tip.x - before.x, dy = tip.y - before.y
-                let length = Swift.max(0.001, sqrt(dx * dx + dy * dy))
-                let ux = dx / length, uy = dy / length
+                let dx: CGFloat = tip.x - before.x, dy: CGFloat = tip.y - before.y
+                let length: CGFloat = Swift.max(0.001, sqrt(dx * dx + dy * dy))
+                let ux: CGFloat = dx / length, uy: CGFloat = dy / length
                 let wing: CGFloat = 5
                 var arrow = Path()
                 arrow.move(to: tip)
@@ -113,8 +115,8 @@ struct PieceShapeView: View {
             }
 
             if projection == .bank {
-                let angle = piece.totalRoll.approximateDouble
-                let centre = CGPoint(x: size.width / 2, y: size.height / 2)
+                let angle: CGFloat = CGFloat(piece.totalRoll.approximateDouble)
+                let centre: CGPoint = CGPoint(x: size.width / 2, y: size.height / 2)
                 let arm: CGFloat = Swift.min(size.width, size.height) * 0.26
                 var tick = Path()
                 tick.move(to: CGPoint(x: centre.x - cos(angle) * arm, y: centre.y - sin(angle) * arm))
